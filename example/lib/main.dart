@@ -1,8 +1,5 @@
+import 'package:cloud_helper/cloud_helper_method_channel.dart';
 import 'package:flutter/material.dart';
-import 'dart:async';
-
-import 'package:flutter/services.dart';
-import 'package:cloud_helper/cloud_helper.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,36 +13,13 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
-  final _cloudHelperPlugin = CloudHelper();
+  static const _containerId = 'iCloud.com.cloud.example';
 
-  @override
-  void initState() {
-    super.initState();
-    initPlatformState();
-  }
-
-  // Platform messages are asynchronous, so we initialize in an async method.
-  Future<void> initPlatformState() async {
-    String platformVersion;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    // We also handle the message potentially returning null.
-    try {
-      platformVersion =
-          await _cloudHelperPlugin.getPlatformVersion() ?? 'Unknown platform version';
-    } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
-    }
-
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    if (!mounted) return;
-
-    setState(() {
-      _platformVersion = platformVersion;
-    });
-  }
+  final _idController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _phraseController = TextEditingController();
+  CloudHelper? cloudHelper;
+  String? data;
 
   @override
   Widget build(BuildContext context) {
@@ -54,8 +28,59 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('Plugin example app'),
         ),
-        body: Center(
-          child: Text('Running on: $_platformVersion\n'),
+        body: Column(
+          children: [
+            TextFormField(
+              controller: _idController,
+            ),
+            TextFormField(
+              controller: _nameController,
+            ),
+            TextFormField(
+              controller: _phraseController,
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                cloudHelper ??= await CloudHelper.create(_containerId);
+                await cloudHelper?.addRecord(
+                  data: {
+                    'phrase': _phraseController.text,
+                    'name': _nameController.text,
+                  },
+                  id: _idController.text,
+                  type: 'Seed',
+                );
+              },
+              child: const Text('upload'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                cloudHelper ??= await CloudHelper.create(_containerId);
+                cloudHelper
+                    ?.getAllRecords(
+                      type: 'Seed',
+                    )
+                    .then((value) => setState(() {
+                          data = value?.join('\n');
+                        }));
+              },
+              child: const Text('get'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                cloudHelper ??= await CloudHelper.create(_containerId);
+                cloudHelper
+                    ?.deleteRecord(
+                      id: _idController.text,
+                    )
+                    .then((value) => setState(() {
+                          data = null;
+                        }));
+              },
+              child: const Text('delete'),
+            ),
+            Text(data ?? ''),
+          ],
         ),
       ),
     );
