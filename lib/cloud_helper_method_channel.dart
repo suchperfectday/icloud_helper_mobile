@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cloud_helper/cloud_error.dart';
 import 'package:flutter/services.dart';
 
 /// An implementation of [CloudHelperPlatform] that uses method channels.
@@ -23,7 +24,9 @@ class CloudHelper {
           'containerId': containerId,
         },
       );
-    } catch (err) {}
+    } catch (err) {
+      throw _mapException(err as PlatformException);
+    }
   }
 
   Future<void> addRecord({
@@ -31,51 +34,92 @@ class CloudHelper {
     required String type,
     required dynamic data,
   }) async {
-    await _methodChannel.invokeMethod(
-      'addRecord',
-      {
-        'id': id,
-        'type': type,
-        'data': jsonEncode(data),
-      },
-    );
+    try {
+      await _methodChannel.invokeMethod(
+        'addRecord',
+        {
+          'id': id,
+          'type': type,
+          'data': jsonEncode(data),
+        },
+      );
+    } catch (err) {
+      throw _mapException(err as PlatformException);
+    }
   }
 
   Future<void> editRecord({
     required String id,
-    required String type,
     required dynamic data,
   }) async {
-    final result = await _methodChannel.invokeMethod(
-      'editRecord',
-      {
-        'id': id,
-        'data': jsonEncode(data),
-      },
-    );
-    print(result);
+    try {
+      await _methodChannel.invokeMethod(
+        'editRecord',
+        {
+          'id': id,
+          'data': jsonEncode(data),
+        },
+      );
+    } catch (err) {
+      throw _mapException(err as PlatformException);
+    }
   }
 
   Future<List<dynamic>?> getAllRecords({
     required String type,
   }) async {
-    final data = await _methodChannel.invokeMethod(
-      'getAllRecords',
-      {
-        'type': type,
-      },
-    ) as List<dynamic>?;
-    return data?.map((e) => jsonDecode(e)).toList();
+    try {
+      final data = await _methodChannel.invokeMethod(
+        'getAllRecords',
+        {
+          'type': type,
+        },
+      ) as List<dynamic>?;
+      return data?.map((e) => jsonDecode(e)).toList();
+    } catch (err) {
+      throw _mapException(err as PlatformException);
+    }
   }
 
   Future<void> deleteRecord({
     required String id,
   }) async {
-    await _methodChannel.invokeMethod(
-      'deleteRecord',
-      {
-        'id': id,
-      },
-    );
+    try {
+      await _methodChannel.invokeMethod(
+        'deleteRecord',
+        {
+          'id': id,
+        },
+      );
+    } catch (err) {
+      throw _mapException(err as PlatformException);
+    }
+  }
+
+  CloudError _mapException(PlatformException err) {
+    if (err.message?.contains('CloudKit access was denied by user settings') ?? false) {
+      return const PermissionError();
+    }
+
+    switch (err.code) {
+      case "ARGUMENT_ERROR":
+        return const ArgumentsError();
+      case "INITIALIZATION_ERROR":
+        return const InitializeError();
+      case "EDIT_ERROR":
+        if (err.message?.contains('Record not found') ?? false) {
+          return const ItemNotFoundError();
+        } else {
+          return UnknownError(err.message ?? 'Empty error');
+        }
+      case "UPLOAD_ERROR":
+        if (err.message?.toLowerCase().contains('record to insert already exists') ?? false) {
+          return const AlreadyExists();
+        } else {
+          return UnknownError(err.message ?? '');
+        }
+      default:
+        return UnknownError(err.message ?? 'Empty error');
+    }
   }
 }

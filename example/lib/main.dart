@@ -93,7 +93,6 @@ class _MyAppState extends State<MyApp> {
                 try {
                   await cloudHelper?.editRecord(
                     id: _idController.text,
-                    type: 'Seed',
                     data: {
                       'phrase': _phraseController.text,
                       'name': _nameController.text,
