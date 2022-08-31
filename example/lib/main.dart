@@ -42,27 +42,35 @@ class _MyAppState extends State<MyApp> {
             ElevatedButton(
               onPressed: () async {
                 cloudHelper ??= await CloudHelper.create(_containerId);
-                await cloudHelper?.addRecord(
-                  data: {
-                    'phrase': _phraseController.text,
-                    'name': _nameController.text,
-                  },
-                  id: _idController.text,
-                  type: 'Seed',
-                );
+                try {
+                  await cloudHelper?.addRecord(
+                    data: {
+                      'phrase': _phraseController.text,
+                      'name': _nameController.text,
+                    },
+                    id: _idController.text,
+                    type: 'Seed',
+                  );
+                } catch (err) {
+                  print(err);
+                  // Error saving record <CKRecordID: 0x131ef0840; recordName=test, zoneID=_defaultZone:__defaultOwner__> to server: record to insert already exists
+                }
               },
               child: const Text('upload'),
             ),
             ElevatedButton(
               onPressed: () async {
                 cloudHelper ??= await CloudHelper.create(_containerId);
-                cloudHelper
-                    ?.getAllRecords(
-                      type: 'Seed',
-                    )
-                    .then((value) => setState(() {
-                          data = value?.join('\n');
-                        }));
+                try {
+                  final a = await cloudHelper?.getAllRecords(
+                    type: 'Seed',
+                  );
+                  setState(() {
+                    data = a?.join('\n');
+                  });
+                } catch (err) {
+                  print(err);
+                }
               },
               child: const Text('get'),
             ),
@@ -78,6 +86,24 @@ class _MyAppState extends State<MyApp> {
                         }));
               },
               child: const Text('delete'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                cloudHelper ??= await CloudHelper.create(_containerId);
+                try {
+                  await cloudHelper?.editRecord(
+                    id: _idController.text,
+                    type: 'Seed',
+                    data: {
+                      'phrase': _phraseController.text,
+                      'name': _nameController.text,
+                    },
+                  );
+                } catch (err) {
+                  print(err);
+                }
+              },
+              child: const Text('edit'),
             ),
             Text(data ?? ''),
           ],

@@ -20,6 +20,8 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
             initialize(call, result)
         case "addRecord":
             addRecord(call, result)
+        case "editRecord":
+            editRecord(call, result)
         case "deleteRecord":
             deleteRecord(call, result)
         case "getAllRecords":
@@ -52,7 +54,7 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
               let data = args["data"] as? String,
               let id = args["id"] as? String
         else {
-            result(FlutterError.init(code: "UPLOAD_ERROR", message: "Failed to upload data", details: nil))
+            result(FlutterError.init(code: "ARGUMENT_ERROR", message: "Required arguments are not provided", details: nil))
             return
         }
         
@@ -64,7 +66,46 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
                 try await database!.save(newRecord)
                 result(nil)
             } catch {
-                result(error)
+                result(FlutterError.init(code: "UPLOAD_ERROR", message: error.localizedDescription, details: nil))
+                return
+            }
+        }
+    }
+    
+    private func editRecord(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
+        guard database != nil else {
+            result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
+            return
+        }
+        guard let args = call.arguments as? Dictionary<String, Any>,
+              let data = args["data"] as? String,
+              let id = args["id"] as? String
+        else {
+            result(FlutterError.init(code: "ARGUMENT_ERROR", message: "Required arguments are not provided", details: nil))
+            return
+        }
+        
+        let recordID = CKRecord.ID(recordName: id)
+        
+        database!.fetch(withRecordID: recordID) { record, error in
+            
+            if let newRecord = record, error == nil {
+                
+                newRecord["data"] = data
+                
+                Task {
+                    do {
+                        try await self.database!.save(newRecord)
+                        result(nil)
+                    } catch {
+                        result(FlutterError.init(code: "EDIT_ERROR", message: error.localizedDescription, details: nil))
+                        return
+                    }
+                }
+            } else if let error = error {
+                result(FlutterError.init(code: "EDIT_ERROR", message: error.localizedDescription, details: nil))
+            } else {
+                result(FlutterError.init(code: "EDIT_ERROR", message: "Record not found", details: nil))
             }
         }
     }
@@ -77,7 +118,7 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
         guard let args = call.arguments as? Dictionary<String, Any>,
               let type = args["type"] as? String
         else {
-            result(FlutterError.init(code: "UPLOAD_ERROR", message: "Failed to upload data", details: nil))
+            result(FlutterError.init(code: "ARGUMENT_ERROR", message: "Required arguments are not provided", details: nil))
             return
         }
         let pred = NSPredicate(value: true)
@@ -97,7 +138,7 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
                 if error == nil {
                     result(data)
                 } else {
-                    result(FlutterError.init(code: "GET_DATA_ERROR", message: "Failed to get data", details: nil))
+                    result(FlutterError.init(code: "GET_DATA_ERROR", message: error?.localizedDescription, details: nil))
                 }
             }
         }

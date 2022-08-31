@@ -16,12 +16,14 @@ class CloudHelper {
   final _methodChannel = const MethodChannel('cloud_helper');
 
   Future<void> _initialize(String containerId) async {
-    await _methodChannel.invokeMethod(
-      'initialize',
-      {
-        'containerId': containerId,
-      },
-    );
+    try {
+      await _methodChannel.invokeMethod(
+        'initialize',
+        {
+          'containerId': containerId,
+        },
+      );
+    } catch (err) {}
   }
 
   Future<void> addRecord({
@@ -37,6 +39,21 @@ class CloudHelper {
         'data': jsonEncode(data),
       },
     );
+  }
+
+  Future<void> editRecord({
+    required String id,
+    required String type,
+    required dynamic data,
+  }) async {
+    final result = await _methodChannel.invokeMethod(
+      'editRecord',
+      {
+        'id': id,
+        'data': jsonEncode(data),
+      },
+    );
+    print(result);
   }
 
   Future<List<dynamic>?> getAllRecords({
