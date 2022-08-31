@@ -2,7 +2,7 @@ import Flutter
 import UIKit
 import CloudKit
 
-@available(iOS 15.0, *)
+@available(iOS 13.0, *)
 public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
     private var container: CKContainer?
     
