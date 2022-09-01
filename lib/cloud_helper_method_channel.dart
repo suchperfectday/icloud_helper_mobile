@@ -77,6 +77,9 @@ class CloudHelper {
       ) as List<dynamic>?;
       return data?.map((e) => jsonDecode(e)).toList();
     } catch (err) {
+      if (err is PlatformException && (err.message?.contains('Did not find record type: $type') ?? false)) {
+        return [];
+      }
       throw _mapException(err as PlatformException);
     }
   }
