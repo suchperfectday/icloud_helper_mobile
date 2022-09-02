@@ -29,13 +29,13 @@ class CloudHelper {
     }
   }
 
-  Future<void> addRecord({
+  Future<dynamic> addRecord({
     required String id,
     required String type,
     required dynamic data,
   }) async {
     try {
-      await _methodChannel.invokeMethod(
+      final addedData = await _methodChannel.invokeMethod(
         'addRecord',
         {
           'id': id,
@@ -43,23 +43,26 @@ class CloudHelper {
           'data': jsonEncode(data),
         },
       );
+
+      return jsonDecode(addedData);
     } catch (err) {
       throw _mapException(err as PlatformException);
     }
   }
 
-  Future<void> editRecord({
+  Future<dynamic> editRecord({
     required String id,
     required dynamic data,
   }) async {
     try {
-      await _methodChannel.invokeMethod(
+      final editedData = await _methodChannel.invokeMethod(
         'editRecord',
         {
           'id': id,
           'data': jsonEncode(data),
         },
       );
+      return jsonDecode(editedData);
     } catch (err) {
       throw _mapException(err as PlatformException);
     }
@@ -75,6 +78,7 @@ class CloudHelper {
           'type': type,
         },
       ) as List<dynamic>?;
+      
       return data?.map((e) => jsonDecode(e)).toList();
     } catch (err) {
       if (err is PlatformException && (err.message?.contains('Did not find record type: $type') ?? false)) {

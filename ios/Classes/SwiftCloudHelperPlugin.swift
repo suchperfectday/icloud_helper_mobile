@@ -63,8 +63,8 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
         newRecord["data"] = data
         Task {
             do {
-                try await database!.save(newRecord)
-                result(nil)
+                let addedRecord = try await database!.save(newRecord)
+                result(addedRecord["data"])
             } catch {
                 result(FlutterError.init(code: "UPLOAD_ERROR", message: error.localizedDescription, details: nil))
                 return
@@ -95,8 +95,8 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
                 
                 Task {
                     do {
-                        try await self.database!.save(newRecord)
-                        result(nil)
+                        let editedRecord = try await self.database!.save(newRecord)
+                        result(editedRecord["data"])
                     } catch {
                         result(FlutterError.init(code: "EDIT_ERROR", message: error.localizedDescription, details: nil))
                         return
