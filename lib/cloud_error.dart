@@ -1,7 +1,10 @@
-abstract class CloudError {
+abstract class CloudError implements Exception {
   final String message;
 
   const CloudError(this.message);
+
+  @override
+  String toString() => 'iCloud exception: $message';
 }
 
 class InitializeError extends CloudError {
