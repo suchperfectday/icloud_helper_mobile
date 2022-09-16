@@ -1,0 +1,22 @@
+PODS:
+  - cloud_helper (0.0.1):
+    - FlutterMacOS
+  - FlutterMacOS (1.0.0)
+
+DEPENDENCIES:
+  - cloud_helper (from `Flutter/ephemeral/.symlinks/plugins/cloud_helper/macos`)
+  - FlutterMacOS (from `Flutter/ephemeral`)
+
+EXTERNAL SOURCES:
+  cloud_helper:
+    :path: Flutter/ephemeral/.symlinks/plugins/cloud_helper/macos
+  FlutterMacOS:
+    :path: Flutter/ephemeral
+
+SPEC CHECKSUMS:
+  cloud_helper: 70f1864594572f18a5919dc77a88eece8d3481ff
+  FlutterMacOS: ae6af50a8ea7d6103d888583d46bd8328a7e9811
+
+PODFILE CHECKSUM: 6eac6b3292e5142cfc23bdeb71848a40ec51c14c
+
+COCOAPODS: 1.11.3
