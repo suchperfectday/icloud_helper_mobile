@@ -1,15 +1,73 @@
 # cloud_helper
 
-A new Flutter plugin project.
+Plugin for Flutter that allows uploading, deleting and modifying records to iCloud.
 
-## Getting Started
+## Prerequisite
 
-This project is a starting point for a Flutter
-[plug-in package](https://flutter.dev/developing-packages/),
-a specialized package that includes platform-specific implementation code for
-Android and/or iOS.
+The following setups are needed in order to use this plugin:
 
-For help getting started with Flutter development, view the
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+1. An apple developer account
+2. Created an App ID and iCloud Container ID
+3. Enabled iCloud capability and assigned iCloud Container ID for the App ID
+4. Enabled iCloud capability in Xcode
 
+Refer to the [How to set up iCloud Container and enable the capability](#how-to-set-up-icloud-container-and-enable-the-capability) section for more detailed instructions.
+
+## API Usage
+
+### Get instance
+
+```dart
+final cloudHelper = await CloudHelper.create('iCloudContainerId');
+```
+
+### Get files from iCloud
+
+```dart
+final cloudHelper = await CloudHelper.create('iCloudContainerId');
+final fileList = await cloudHelper.getAllRecords(type: 'recordType',);
+```
+
+### Upload a file to iCloud
+
+```dart
+final cloudHelper = await CloudHelper.create('iCloudContainerId');
+await cloudHelper.addRecord(
+    data: 'recordData',
+    id: 'recordId',
+    type: 'recordType',
+);
+```
+
+### Delete a file from iCloud
+
+```dart
+final cloudHelper = await CloudHelper.create('iCloudContainerId');
+await cloudHelper.deleteRecord(id: recordId,);
+```
+
+### Modify a file
+
+```dart
+final cloudHelper = await CloudHelper.create('iCloudContainerId');
+await cloudHelper?.editRecord(
+    id: 'recordId',
+    data: 'newData',
+);
+```
+
+## How to set up iCloud Container and enable the capability
+
+1. Log in to your apple developer account and select 'Certificates, IDs & Profiles' from the left navigation.
+2. Select 'Identifiers' from the 'Certificates, IDs & Profiles' page, create an App ID if you haven't done so, and create an iCloud Containers ID.
+   ![icloud container id](./readme_resources/icloud_container_id.png)
+3. Click on your App ID. In the Capabilities section, select 'iCloud' and assign the iCloud Container created in step 2 to this App ID.
+   ![assign icloud capability](./readme_resources/assign_icloud_capability.png)
+4. Open your project in Xcode. Set your App ID as 'Bundle Identifier' if you haven't done so. Click on '+ Capability' button, select iCloud, then tick 'CloudKit' in the Services section and select your iCloud container.
+   ![xcode capability](./readme_resources/xcode_capability.png)
+
+## References
+
+[Apple Documentation - iOS Data Storage Guidelines](https://developer.apple.com/icloud/documentation/data-storage/)
+
+[Apple Documentation - Designing for Documents in iCloud](https://developer.apple.com/library/archive/documentation/General/Conceptual/iCloudDesignGuide/Chapters/DesigningForDocumentsIniCloud.html)
