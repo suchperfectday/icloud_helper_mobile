@@ -24,14 +24,12 @@ final cloudHelper = await CloudHelper.create('iCloudContainerId');
 ### Get files from iCloud
 
 ```dart
-final cloudHelper = await CloudHelper.create('iCloudContainerId');
-final fileList = await cloudHelper.getAllRecords(type: 'recordType',);
+final fileList = await cloudHelper.getAllRecords(type: 'recordType');
 ```
 
 ### Upload a file to iCloud
 
 ```dart
-final cloudHelper = await CloudHelper.create('iCloudContainerId');
 await cloudHelper.addRecord(
     data: 'recordData',
     id: 'recordId',
@@ -42,15 +40,13 @@ await cloudHelper.addRecord(
 ### Delete a file from iCloud
 
 ```dart
-final cloudHelper = await CloudHelper.create('iCloudContainerId');
 await cloudHelper.deleteRecord(id: recordId,);
 ```
 
 ### Modify a file
 
 ```dart
-final cloudHelper = await CloudHelper.create('iCloudContainerId');
-await cloudHelper?.editRecord(
+await cloudHelper.editRecord(
     id: 'recordId',
     data: 'newData',
 );
