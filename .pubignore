@@ -1,0 +1,11 @@
+example/.DS_Store
+example/.dart_tool/
+.dart_tool/
+build/
+
+example/.packages
+example/.pub/
+
+example/build/
+
+example/.idea/
