@@ -33,7 +33,7 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
     
     private func initialize(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         guard let args = call.arguments as? Dictionary<String, Any>,
-              let containerId = args["containerId"] as? String
+              let containerId = args["containerId"] as? String,
               let databaseType = args["databaseType"] as? String
         else {
             result(FlutterError.init(code: "ARGUMENT_ERROR", message: "Required arguments are not provided", details: nil))
