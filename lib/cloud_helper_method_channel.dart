@@ -7,9 +7,9 @@ import 'package:flutter/services.dart';
 class CloudHelper {
   CloudHelper._();
 
-  static Future<CloudHelper> create(String containerId) async {
+  static Future<CloudHelper> create(String containerId, String databaseType) async {
     final instance = CloudHelper._();
-    await instance._initialize(containerId);
+    await instance._initialize(containerId,databaseType);
 
     return instance;
   }
