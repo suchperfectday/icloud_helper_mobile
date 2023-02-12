@@ -16,12 +16,13 @@ class CloudHelper {
 
   final _methodChannel = const MethodChannel('cloud_helper');
 
-  Future<void> _initialize(String containerId) async {
+  Future<void> _initialize(String containerId, String databaseType) async {
     try {
       await _methodChannel.invokeMethod(
         'initialize',
         {
           'containerId': containerId,
+          'databaseType': databaseType
         },
       );
     } catch (err) {
