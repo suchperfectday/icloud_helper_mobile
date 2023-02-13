@@ -20,6 +20,8 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
             initialize(call, result)
         case "addRecord":
             addRecord(call, result)
+        case "insertRecords":
+            insertRecords(call, result)
         case "editRecord":
             editRecord(call, result)
         case "deleteRecord":
@@ -70,6 +72,35 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
             do {
                 let addedRecord = try await database!.save(newRecord)
                 result(addedRecord["data"])
+            } catch {
+                result(FlutterError.init(code: "UPLOAD_ERROR", message: error.localizedDescription, details: nil))
+                return
+            }
+        }
+    }
+
+    private func insertRecords(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
+        guard database != nil else {
+            result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
+            return
+        }
+        guard let args = call.arguments as? Dictionary<String, Any>,
+              let type = args["type"] as? String,
+              let insertRecordsData = args["records"] as? Array<NSObject>
+        else {
+            result(FlutterError.init(code: "ARGUMENT_ERROR", message: "Required arguments are not provided", details: nil))
+            return
+        }
+         let newRecords = insertRecordsData.map { (NSObject rData) -> CKRecord in
+            let recordId = CKRecord.ID(recordName: id)
+            let newRecord = CKRecord(recordType: type, recordID: recordId)
+            newRecord["data"] = data
+            return newRecord;
+         };
+        Task {
+            do {
+                let addedRecord = try await database!.saveRecords(newRecords)
+                result(addedRecord)
             } catch {
                 result(FlutterError.init(code: "UPLOAD_ERROR", message: error.localizedDescription, details: nil))
                 return

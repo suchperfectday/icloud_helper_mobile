@@ -30,6 +30,23 @@ class CloudHelper {
     }
   }
 
+  Future<dynamic> insertRecords({
+    required String type,
+    required List records
+  }) async {
+    try {
+      final addedData = await _methodChannel.invokeMethod(
+        'insertRecords',
+        {
+          'type': type,
+          'records': jsonEncode(records),
+        },
+      );
+      return jsonDecode(addedData);
+    } catch (err) {
+      throw _mapException(err as PlatformException);
+    }
+  }
   Future<dynamic> addRecord({
     required String id,
     required String type,
