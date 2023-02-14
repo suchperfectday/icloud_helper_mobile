@@ -2,18 +2,25 @@ import Flutter
 import UIKit
 import CloudKit
 
+extension Array {
+    func chunk(into size: Int) -> [[Element]] {
+        return stride(from: 0, to: count, by: size).map {
+            Array(self[$0 ..< Swift.min($0 + size, count)])
+        }
+    }
+}
 @available(iOS 13.0, *)
 public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
     private var container: CKContainer?
-    
+
     private var database:  CKDatabase?
-    
+
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "cloud_helper", binaryMessenger: registrar.messenger())
         let instance = SwiftCloudHelperPlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
     }
-    
+
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case "initialize":
@@ -32,7 +39,7 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
             result(FlutterMethodNotImplemented)
         }
     }
-    
+
     private func initialize(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         guard let args = call.arguments as? Dictionary<String, Any>,
               let containerId = args["containerId"] as? String,
@@ -49,8 +56,8 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
         }
         result(nil)
     }
-    
-    
+
+
     private func addRecord(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         guard database != nil else {
             result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
@@ -64,7 +71,7 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
             result(FlutterError.init(code: "ARGUMENT_ERROR", message: "Required arguments are not provided", details: nil))
             return
         }
-        
+
         let recordId = CKRecord.ID(recordName: id)
         let newRecord = CKRecord(recordType: type, recordID: recordId)
         newRecord["data"] = data
@@ -84,28 +91,53 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
             result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
             return
         }
+
         guard let args = call.arguments as? Dictionary<String, Any>,
               let type = args["type"] as? String,
-              let insertRecordsData = args["records"] as? Array<NSObject>
+              let insertRecordsJson = args["records"] as? String
         else {
             result(FlutterError.init(code: "ARGUMENT_ERROR", message: "Required arguments are not provided", details: nil))
             return
         }
-         let newRecords = insertRecordsData.map { (NSObject rData) -> CKRecord in
-            let recordId = CKRecord.ID(recordName: id)
-            let newRecord = CKRecord(recordType: type, recordID: recordId)
-            newRecord["data"] = data
-            return newRecord;
+        guard let data = insertRecordsJson.data(using: .utf8),
+           let jsonData = try? JSONSerialization.jsonObject(with: data, options: []) as? [Dictionary<String, Any>]
+        else {
+             result(FlutterError.init(code: "ARGUMENT_ERROR", message: "Required arguments are not provided", details: nil))
+             return
+         }
+         let newRecords : Array<CKRecord> = jsonData.map { (rData) -> CKRecord in
+               let data = rData["data"] as? String
+               let id = rData["id"] as? String
+                let recordId = CKRecord.ID(recordName: id!)
+                let newRecord = CKRecord(recordType: type, recordID: recordId)
+                newRecord["data"] = data
+                return newRecord;
          };
+        // CloudKit only allow 400 item at single request, chunk data here
+        // modifyRecords available only in IOS +15
         Task {
-            do {
-                let addedRecord = try await database!.saveRecords(newRecords)
-                result(addedRecord)
-            } catch {
-                result(FlutterError.init(code: "UPLOAD_ERROR", message: error.localizedDescription, details: nil))
-                return
+            if #available(iOS 15.0, *) {
+                for chunk in newRecords.chunk(into: 400) {
+                     do {
+                         let (_, _) = try await database!.modifyRecords(saving: chunk, deleting: []);
+                     } catch {
+                         result(FlutterError.init(code: "UPLOAD_ERROR", message: error.localizedDescription, details: nil))
+                         return
+                     }
+                }
+            } else {
+                for record in newRecords {
+                     do {
+                         try await database!.save(record)
+                     } catch {
+                         result(FlutterError.init(code: "UPLOAD_ERROR", message: error.localizedDescription, details: nil))
+                         return
+                     }
+                }
             }
         }
+        result(nil)
+
     }
     
     private func editRecord(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {

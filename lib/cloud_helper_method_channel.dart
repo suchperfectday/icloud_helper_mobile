@@ -30,7 +30,7 @@ class CloudHelper {
     }
   }
 
-  Future<dynamic> insertRecords({
+  Future<void> insertRecords({
     required String type,
     required List records
   }) async {
@@ -42,7 +42,6 @@ class CloudHelper {
           'records': jsonEncode(records),
         },
       );
-      return jsonDecode(addedData);
     } catch (err) {
       throw _mapException(err as PlatformException);
     }
