@@ -135,7 +135,7 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
 
 
     }
-    
+
     private func editRecord(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         guard database != nil else {
             result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
@@ -148,15 +148,15 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
             result(FlutterError.init(code: "ARGUMENT_ERROR", message: "Required arguments are not provided", details: nil))
             return
         }
-        
+
         let recordID = CKRecord.ID(recordName: id)
-        
+
         database!.fetch(withRecordID: recordID) { record, error in
-            
+
             if let newRecord = record, error == nil {
-                
+
                 newRecord["data"] = data
-                
+
                 Task {
                     do {
                         let editedRecord = try await self.database!.save(newRecord)
@@ -173,7 +173,7 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
             }
         }
     }
-    
+
     private func getAllRecords(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         guard database != nil else {
             result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
@@ -187,29 +187,42 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
         }
         let pred = NSPredicate(value: true)
         let query = CKQuery(recordType: type, predicate: pred)
-        
-        let operation = CKQueryOperation(query: query)
-        
-        var data = [String]()
-        
+        self._keepLoadRecords(query: query,cursor: nil,result: result, data: [String]())
+
+    }
+
+    private func _keepLoadRecords(query: CKQuery? = nil, cursor: CKQueryOperation.Cursor? = nil,result: @escaping FlutterResult, data: [String]) {
+        var mergedData = data
+        var operation: CKQueryOperation
+        if query != nil {
+            operation = CKQueryOperation(query: query!)
+        }else {
+            operation = CKQueryOperation(cursor: cursor!)
+        }
+
+        operation.resultsLimit = 400;
         operation.recordFetchedBlock = { record in
             if let item: String = record["data"] {
-                data.append(item)
+                mergedData.append(item)
             }
         }
-        operation.queryCompletionBlock = {(cursor, error) in
+        operation.queryCompletionBlock = {(cursor : CKQueryOperation.Cursor?, error : Error?) in
             DispatchQueue.main.async {
                 if error == nil {
-                    result(data)
+                    if cursor != nil {
+                        self._keepLoadRecords(query: nil, cursor: cursor,result: result,data: mergedData)
+                    }else {
+                        result(mergedData)
+                    }
+
                 } else {
                     result(FlutterError.init(code: "GET_DATA_ERROR", message: error?.localizedDescription, details: nil))
                 }
             }
         }
-        
         database?.add(operation)
+
     }
-    
     private func deleteRecord(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         guard let args = call.arguments as? Dictionary<String, Any>,
               let id = args["id"] as? String
