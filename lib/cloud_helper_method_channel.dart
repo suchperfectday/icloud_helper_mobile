@@ -7,16 +7,16 @@ import 'package:flutter/services.dart';
 class CloudHelper {
   CloudHelper._();
 
-  static Future<CloudHelper> create(String containerId, String databaseType) async {
+  static Future<CloudHelper> create(
+      String containerId, String databaseType) async {
     final instance = CloudHelper._();
-    await instance._initialize(containerId,databaseType);
-
+    await instance._initialize(containerId, databaseType);
     return instance;
   }
 
   final _methodChannel = const MethodChannel('cloud_helper');
 
-  Future<void> _initialize(String containerId, String databaseType) async {
+  Future<void> _initialize(String containerId,  String databaseType) async {
     try {
       await _methodChannel.invokeMethod(
         'initialize',
@@ -30,10 +30,8 @@ class CloudHelper {
     }
   }
 
-  Future<void> insertRecords({
-    required String type,
-    required List records
-  }) async {
+  Future<void> insertRecords(
+      {required String type, required List records}) async {
     try {
       final addedData = await _methodChannel.invokeMethod(
         'insertRecords',
@@ -46,10 +44,11 @@ class CloudHelper {
       throw _mapException(err as PlatformException);
     }
   }
+
   Future<dynamic> addRecord({
     required String id,
     required String type,
-    required dynamic data,
+    required Map<String, dynamic> data,
   }) async {
     try {
       final addedData = await _methodChannel.invokeMethod(
@@ -57,11 +56,25 @@ class CloudHelper {
         {
           'id': id,
           'type': type,
-          'data': jsonEncode(data),
+          'data': data,
         },
       );
 
       return jsonDecode(addedData);
+    } catch (err) {
+      throw _mapException(err as PlatformException);
+    }
+  }
+
+  Future<dynamic> getOneRecord({required String id}) async {
+    try {
+      final data = await _methodChannel.invokeMethod(
+        'getOneRecord',
+        {
+          'id': id,
+        },
+      );
+      return jsonDecode(data);
     } catch (err) {
       throw _mapException(err as PlatformException);
     }
@@ -85,12 +98,30 @@ class CloudHelper {
     }
   }
 
-  Future<List<dynamic>?> getAllRecords({
+  Future<List<dynamic>?> getAllRecords(
+      {required String type, String? query = null}) async {
+    try {
+      final data = await _methodChannel.invokeMethod(
+        'getAllRecords',
+        {'type': type, "query": query},
+      ) as List<dynamic>?;
+
+      return data?.map((e) => jsonDecode(e)).toList();
+    } catch (err) {
+      if (err is PlatformException &&
+          (err.message?.contains('Did not find record type: $type') ?? false)) {
+        return [];
+      }
+      throw _mapException(err as PlatformException);
+    }
+  }
+
+  Future<List<dynamic>?> searchRecords({
     required String type,
   }) async {
     try {
       final data = await _methodChannel.invokeMethod(
-        'getAllRecords',
+        'searchRecords',
         {
           'type': type,
         },
@@ -98,7 +129,8 @@ class CloudHelper {
 
       return data?.map((e) => jsonDecode(e)).toList();
     } catch (err) {
-      if (err is PlatformException && (err.message?.contains('Did not find record type: $type') ?? false)) {
+      if (err is PlatformException &&
+          (err.message?.contains('Did not find record type: $type') ?? false)) {
         return [];
       }
       throw _mapException(err as PlatformException);
@@ -121,7 +153,8 @@ class CloudHelper {
   }
 
   CloudError _mapException(PlatformException err) {
-    if (err.message?.contains('CloudKit access was denied by user settings') ?? false) {
+    if (err.message?.contains('CloudKit access was denied by user settings') ??
+        false) {
       return const PermissionError();
     }
 
@@ -137,7 +170,10 @@ class CloudHelper {
           return UnknownError(err.message ?? 'Empty error');
         }
       case "UPLOAD_ERROR":
-        if (err.message?.toLowerCase().contains('record to insert already exists') ?? false) {
+        if (err.message
+                ?.toLowerCase()
+                .contains('record to insert already exists') ??
+            false) {
           return const AlreadyExists();
         } else {
           return UnknownError(err.message ?? '');
