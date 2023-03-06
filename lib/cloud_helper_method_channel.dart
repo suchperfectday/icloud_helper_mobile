@@ -16,29 +16,11 @@ class CloudHelper {
 
   final _methodChannel = const MethodChannel('cloud_helper');
 
-  Future<void> _initialize(String containerId,  String databaseType) async {
+  Future<void> _initialize(String containerId, String databaseType) async {
     try {
       await _methodChannel.invokeMethod(
         'initialize',
-        {
-          'containerId': containerId,
-          'databaseType': databaseType
-        },
-      );
-    } catch (err) {
-      throw _mapException(err as PlatformException);
-    }
-  }
-
-  Future<void> insertRecords(
-      {required String type, required List records}) async {
-    try {
-      final addedData = await _methodChannel.invokeMethod(
-        'insertRecords',
-        {
-          'type': type,
-          'records': jsonEncode(records),
-        },
+        {'containerId': containerId, 'databaseType': databaseType},
       );
     } catch (err) {
       throw _mapException(err as PlatformException);
@@ -56,10 +38,9 @@ class CloudHelper {
         {
           'id': id,
           'type': type,
-          'data': data,
+          'data': jsonEncode(data),
         },
       );
-
       return jsonDecode(addedData);
     } catch (err) {
       throw _mapException(err as PlatformException);
@@ -99,7 +80,7 @@ class CloudHelper {
   }
 
   Future<List<dynamic>?> getAllRecords(
-      {required String type, String? query = null}) async {
+      {required String type, String? query = ""}) async {
     try {
       final data = await _methodChannel.invokeMethod(
         'getAllRecords',
@@ -157,7 +138,6 @@ class CloudHelper {
         false) {
       return const PermissionError();
     }
-
     switch (err.code) {
       case "ARGUMENT_ERROR":
         return const ArgumentsError();

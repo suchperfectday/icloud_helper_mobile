@@ -65,7 +65,7 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
         }
         guard let args = call.arguments as? Dictionary<String, Any>,
               let type = args["type"] as? String,
-              let data = args["data"] as? Dictionary<String, String>,
+              let dataString = args["data"] as? String,
               let id = args["id"] as? String
         else {
             result(FlutterError.init(code: "ARGUMENT_ERROR", message: "addRecord Required arguments are not provided", details: nil))
@@ -73,20 +73,40 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
         }
         let recordId = CKRecord.ID(recordName: id)
         let newRecord = CKRecord(recordType: type, recordID: recordId)
-        for (key, value) in data {
-             newRecord[key] = value
+        if let jsonData = dataString.data(using: .utf8) {
+            do {
+                if let jsonDict = try JSONSerialization.jsonObject(with: jsonData, options: []) as? [String: Any] {
+                    newRecord.setValuesForKeys(jsonDict)
+                }
+            } catch {
+                result(FlutterError.init(code: "ARGUMENT_ERROR", message: "addRecord Required arguments are not provided", details: nil))
+                return
+            }
         }
+
         Task {
             do {
                 let addedRecord = try await database!.save(newRecord)
-                result(addedRecord["data"])
+                let re = try self.parseRecord(addedRecord)
+                result(re)
             } catch {
                 result(FlutterError.init(code: "UPLOAD_ERROR", message: error.localizedDescription, details: nil))
                 return
             }
         }
     }
-
+    private func parseRecord(_ record: CKRecord) throws -> String {
+        var dic: [String: Any] = [:]
+        record.allKeys().forEach { key in
+            dic[key] = record[key]
+        }
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: dic, options: .prettyPrinted)
+            return String(data: jsonData, encoding: .utf8)!
+        } catch {
+           throw error
+        }
+    }
     private func getOneRecord(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         guard database != nil else {
             result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
@@ -102,7 +122,12 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
         let recordID = CKRecord.ID(recordName: id)
         database!.fetch(withRecordID: recordID) { record, error in
             if let newRecord = record, error == nil {
-                result(newRecord["data"])
+                do {
+                    let re = try self.parseRecord(newRecord)
+                    result(re)
+                }catch {
+                    result(FlutterError.init(code: "EDIT_ERROR", message: error.localizedDescription, details: nil))
+                }
             } else if let error = error {
                 result(FlutterError.init(code: "EDIT_ERROR", message: error.localizedDescription, details: nil))
             } else {
@@ -134,7 +159,8 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
                 Task {
                     do {
                         let editedRecord = try await self.database!.save(newRecord)
-                        result(editedRecord["data"])
+                        let re = try self.parseRecord(editedRecord)
+                        result(re)
                     } catch {
                         result(FlutterError.init(code: "EDIT_ERROR", message: error.localizedDescription, details: nil))
                         return
@@ -166,12 +192,12 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
             predicateQuery = NSPredicate(format: queryString)
         }
         let query = CKQuery(recordType: type, predicate: predicateQuery)
-        self._keepLoadRecords(query: query,cursor: nil,result: result, data: [String]())
+        self._keepLoadRecords(query: query,cursor: nil,result: result, data: [])
 
     }
 
     private func _keepLoadRecords(query: CKQuery? = nil, cursor: CKQueryOperation.Cursor? = nil,result: @escaping FlutterResult, data: [String]) {
-        var mergedData = data
+        var mergedData: [String] = data
         var operation: CKQueryOperation
         if query != nil {
             operation = CKQueryOperation(query: query!)
@@ -181,8 +207,12 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
 
         operation.resultsLimit = 400;
         operation.recordFetchedBlock = { record in
-            if let item: String = record["data"] {
-                mergedData.append(item)
+            do {
+                let re: String = try self.parseRecord(record)
+                mergedData.append(re)
+            } catch {
+                // result(FlutterError.init(code: "UPLOAD_ERROR", message: error.localizedDescription, details: nil))
+                // return
             }
         }
         operation.queryCompletionBlock = {(cursor : CKQueryOperation.Cursor?, error : Error?) in
