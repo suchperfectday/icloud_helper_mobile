@@ -143,7 +143,7 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
             return
         }
         guard let args = call.arguments as? Dictionary<String, Any>,
-              let data = args["data"] as? String,
+              let dataString = args["data"] as? String,
               let id = args["id"] as? String
         else {
             result(FlutterError.init(code: "ARGUMENT_ERROR", message: "editRecord Required arguments are not provided", details: nil))
@@ -153,9 +153,18 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
         let recordID = CKRecord.ID(recordName: id)
 
         database!.fetch(withRecordID: recordID) { record, error in
-
             if let newRecord = record, error == nil {
-                newRecord["data"] = data
+                if let jsonData = dataString.data(using: .utf8) {
+                    do {
+                        if let jsonDict = try JSONSerialization.jsonObject(with: jsonData, options: []) as? [String: Any] {
+                            newRecord.setValuesForKeys(jsonDict)
+                        }
+                    } catch {
+                        result(FlutterError.init(code: "ARGUMENT_ERROR", message: "addRecord Required arguments are not provided", details: nil))
+                        return
+                    }
+                }
+                // newRecord["data"] = data
                 Task {
                     do {
                         let editedRecord = try await self.database!.save(newRecord)
