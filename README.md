@@ -56,11 +56,11 @@ await cloudHelper.editRecord(
 
 1. Log in to your apple developer account and select 'Certificates, IDs & Profiles' from the left navigation.
 2. Select 'Identifiers' from the 'Certificates, IDs & Profiles' page, create an App ID if you haven't done so, and create an iCloud Containers ID.
-   ![icloud container id](./readme_resources/icloud_container_id.png)
+   ![icloud container id](https://github.com/Progressive-Mobile/icloud_helper/blob/main/readme_resources/icloud_container_id.png)
 3. Click on your App ID. In the Capabilities section, select 'iCloud' and assign the iCloud Container created in step 2 to this App ID.
-   ![assign icloud capability](./readme_resources/assign_icloud_capability.png)
+   ![assign icloud capability](https://github.com/Progressive-Mobile/icloud_helper/blob/main/readme_resources/assign_icloud_capability.png)
 4. Open your project in Xcode. Set your App ID as 'Bundle Identifier' if you haven't done so. Click on '+ Capability' button, select iCloud, then tick 'CloudKit' in the Services section and select your iCloud container.
-   ![xcode capability](./readme_resources/xcode_capability.png)
+   ![xcode capability](https://github.com/Progressive-Mobile/icloud_helper/blob/main/readme_resources/xcode_capability.png)
 
 ## References
 
