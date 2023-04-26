@@ -107,6 +107,9 @@ class CloudHelper {
     if (err.message?.contains('CloudKit access was denied by user settings') ?? false) {
       return const PermissionError();
     }
+    if (err.message?.contains('Quota exceeded') ?? false) {
+      return const QuotaExceededError();
+    }
 
     switch (err.code) {
       case "ARGUMENT_ERROR":

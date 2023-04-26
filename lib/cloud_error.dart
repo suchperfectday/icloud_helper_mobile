@@ -30,3 +30,7 @@ class AlreadyExists extends CloudError {
 class UnknownError extends CloudError {
   const UnknownError(super.message);
 }
+
+class QuotaExceededError extends CloudError {
+  const QuotaExceededError() : super('Quota Exceeded');
+}
