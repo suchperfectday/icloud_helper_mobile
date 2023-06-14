@@ -47,6 +47,32 @@ class CloudHelper {
     }
   }
 
+
+Future<dynamic> uploadPublicFile({
+    required String id,
+    required String filename,
+    required String type,
+    required String base64,
+  }) async {
+    try {
+      final addedData = await _methodChannel.invokeMethod(
+        'uploadPublicFile',
+        {
+          'id': id,
+          'data': base64,
+          'type': type,
+          'name': filename,
+        },
+      );
+      print(addedData);
+      return addedData;
+      // return jsonDecode(addedData);
+    } catch (err) {
+      throw _mapException(err as PlatformException);
+    }
+  }
+
+
   Future<dynamic> getOneRecord({required String id}) async {
     try {
       final data = await _methodChannel.invokeMethod(

@@ -14,6 +14,8 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
     private var container: CKContainer?
 
     private var database:  CKDatabase?
+    private var pubDatabase:  CKDatabase?
+    private var priDatabase:  CKDatabase?
 
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "cloud_helper", binaryMessenger: registrar.messenger())
@@ -27,6 +29,8 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
             initialize(call, result)
         case "addRecord":
             addRecord(call, result)
+        case "uploadPublicFile":
+            uploadPublicFile(call, result)
         case "getOneRecord":
             getOneRecord(call, result)
         case "editRecord":
@@ -49,10 +53,12 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
             return
         }
         container = CKContainer(identifier: containerId)
+        priDatabase = container!.privateCloudDatabase;
+        pubDatabase = container!.publicCloudDatabase;
         if(databaseType == "B") {
-            database = container!.privateCloudDatabase
+            database = priDatabase
         }else if(databaseType == "A") {
-            database = container!.publicCloudDatabase
+            database = pubDatabase
         }
         result(nil)
     }
@@ -95,6 +101,53 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
             }
         }
     }
+
+
+
+    private func uploadPublicFile(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
+        guard database != nil else {
+            result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
+            return
+        }
+        guard let args = call.arguments as? Dictionary<String, Any>,
+              let fileBase64String = args["data"] as? String,
+              let type = args["type"] as? String,
+              let filename = args["name"] as? String,
+              let id = args["id"] as? String
+        else {
+            result(FlutterError.init(code: "ARGUMENT_ERROR", message: "uploadPublicFile Required arguments are not provided", details: nil))
+            return
+        }
+
+        guard let imageData = Data(base64Encoded: fileBase64String) else {
+            result(FlutterError.init(code: "ARGUMENT_ERROR", message: "uploadPublicFile invalid fileBase64String", details: nil))
+            return
+        }
+        let recordId = CKRecord.ID(recordName: id)
+        let newRecord = CKRecord(recordType: type, recordID: recordId)
+        let tempDirectoryURL = FileManager.default.temporaryDirectory
+        let tempFileURL = tempDirectoryURL.appendingPathComponent(filename)
+        do {
+            try imageData.write(to: tempFileURL)
+        } catch {
+            result(FlutterError.init(code: "ARGUMENT_ERROR", message: "uploadPublicFile Failed to write image data to temporary file", details: nil))
+            return
+        }
+        let imageAsset = CKAsset(fileURL: tempFileURL)
+        newRecord["Image"] = imageAsset
+        Task {
+            do {
+                let addedRecord = try await pubDatabase!.save(newRecord)
+                let fileAsset = addedRecord["Image"] as! CKAsset
+                result(fileAsset.fileURL?.absoluteString)
+            } catch {
+                result(FlutterError.init(code: "UPLOAD_ERROR", message: error.localizedDescription, details: nil))
+                return
+            }
+        }
+    }
+
+
     private func parseRecord(_ record: CKRecord) throws -> String {
         var dic: [String: Any] = [:]
         record.allKeys().forEach { key in
@@ -160,7 +213,7 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
                             newRecord.setValuesForKeys(jsonDict)
                         }
                     } catch {
-                        result(FlutterError.init(code: "ARGUMENT_ERROR", message: "addRecord Required arguments are not provided", details: nil))
+                        result(FlutterError.init(code: "ARGUMENT_ERROR", message: "editRecord Required arguments are not provided", details: nil))
                         return
                     }
                 }
