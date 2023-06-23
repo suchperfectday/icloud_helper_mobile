@@ -47,6 +47,28 @@ class CloudHelper {
     }
   }
 
+   Future<dynamic> addRecordFile({
+    required String id,
+    required String type,
+    required String fileUrl,
+    required String fieldName,
+  }) async {
+    try {
+      final addedData = await _methodChannel.invokeMethod(
+        'addRecordFile',
+        {
+          'id': id,
+          'type': type,
+          'fileUrl':fileUrl,
+          'fieldName': fieldName,
+        },
+      );
+      return jsonDecode(addedData);
+    } catch (err) {
+      throw _mapException(err as PlatformException);
+    }
+  }
+
   Future<dynamic> getOneRecord({required String id}) async {
     try {
       final data = await _methodChannel.invokeMethod(

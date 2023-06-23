@@ -27,6 +27,8 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
             initialize(call, result)
         case "addRecord":
             addRecord(call, result)
+        case "addRecordFile":
+            addRecordFile(call, result)    
         case "getOneRecord":
             getOneRecord(call, result)
         case "editRecord":
@@ -56,7 +58,6 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
         }
         result(nil)
     }
-
 
     private func addRecord(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         guard database != nil else {
@@ -95,6 +96,41 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
             }
         }
     }
+
+    private func addRecordFile(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
+        guard database != nil else {
+            result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
+            return
+        }
+        guard let args = call.arguments as? Dictionary<String, Any>,
+              let type = args["type"] as? String,
+              let fileUrl = args["fileUrl"] as? String,
+              let fieldName = args["fieldName"] as? String,
+              let id = args["id"] as? String
+        else {
+            result(FlutterError.init(code: "ARGUMENT_ERROR", message: "addRecord Required arguments are not provided", details: nil))
+            return
+        }
+        let recordId = CKRecord.ID(recordName: id)
+        let newRecord = CKRecord(recordType: type, recordID: recordId)
+
+        let fileURL = URL(fileURLWithPath: fileUrl)
+        let asset = CKAsset(fileURL: fileURL)
+
+        newRecord[fieldName] = asset;
+
+        Task {
+            do {
+                let addedRecord = try await database!.save(newRecord)
+                let re = try self.parseRecord(addedRecord)
+                result(re)
+            } catch {
+                result(FlutterError.init(code: "UPLOAD_ERROR", message: error.localizedDescription, details: nil))
+                return
+            }
+        }
+    }
+
     private func parseRecord(_ record: CKRecord) throws -> String {
         var dic: [String: Any] = [:]
         record.allKeys().forEach { key in
