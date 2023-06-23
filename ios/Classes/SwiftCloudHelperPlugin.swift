@@ -122,8 +122,7 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
         Task {
             do {
                 let addedRecord = try await database!.save(newRecord)
-                let re = try self.parseRecord(addedRecord)
-                result(re)
+                result(fileUrl)
             } catch {
                 result(FlutterError.init(code: "UPLOAD_ERROR", message: error.localizedDescription, details: nil))
                 return
