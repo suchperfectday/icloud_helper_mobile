@@ -178,28 +178,30 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
             result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
             return
         }
+        
         guard let args = call.arguments as? Dictionary<String, Any>,
-              let id = args["id"] as? String
+            let id = args["id"] as? String
         else {
             result(FlutterError.init(code: "ARGUMENT_ERROR", message: "getOneRecord Required arguments are not provided", details: nil))
             return
         }
-
+        
         let recordID = CKRecord.ID(recordName: id)
         database!.fetch(withRecordID: recordID) { record, error in
-            if let newRecord = record, error == nil {
-                do {
-                    result(newRecord)
-                }catch {
-                    result(FlutterError.init(code: "EDIT_ERROR", message: error.localizedDescription, details: nil))
+            if let fetchedRecord = record, error == nil {
+                if let asset = fetchedRecord["file"] as? CKAsset,
+                    let assetURL = asset.fileURL {
+                    result(assetURL.absoluteString)
+                } else {
+                    result(FlutterError.init(code: "ASSET_ERROR", message: "Asset not found or invalid", details: nil))
                 }
             } else if let error = error {
-                result(FlutterError.init(code: "EDIT_ERROR", message: error.localizedDescription, details: nil))
+                result(FlutterError.init(code: "FETCH_ERROR", message: error.localizedDescription, details: nil))
             } else {
-                result(FlutterError.init(code: "EDIT_ERROR", message: "Record not found", details: nil))
+                result(FlutterError.init(code: "FETCH_ERROR", message: "Record not found", details: nil))
             }
         }
-    }‰
+    }
     
 
     private func editRecord(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
