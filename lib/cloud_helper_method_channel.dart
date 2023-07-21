@@ -63,7 +63,7 @@ class CloudHelper {
           'fieldName': fieldName,
         },
       );
-      return jsonDecode(addedData);
+      return addedData;
     } catch (err) {
       throw _mapException(err as PlatformException);
     }
