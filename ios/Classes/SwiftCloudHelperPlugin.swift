@@ -189,7 +189,8 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
         let recordID = CKRecord.ID(recordName: id)
         database!.fetch(withRecordID: recordID) { record, error in
             if let fetchedRecord = record, error == nil {
-                if let asset = fetchedRecord["file"] as? CKAsset,
+                let fileFieldName = args["fileFieldName"] as? String
+                if let asset = fetchedRecord[fileFieldName] as? CKAsset,
                     let assetURL = asset.fileURL {
                     result(assetURL.absoluteString)
                 } else {

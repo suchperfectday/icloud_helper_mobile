@@ -87,9 +87,7 @@ class CloudHelper {
     try {
       final data = await _methodChannel.invokeMethod(
         'getOneRecordFile',
-        {
-          'id': id,
-        },
+        {'id': id, 'fileFieldName': 'sqlite_file'},
       );
       return data;
     } catch (err) {
