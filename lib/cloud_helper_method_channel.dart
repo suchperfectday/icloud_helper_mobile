@@ -83,12 +83,11 @@ class CloudHelper {
     }
   }
 
-  Future<dynamic> getOneRecordFile(
-      {required String id, required String fileFieldName}) async {
+  Future<dynamic> getOneRecordFile({required String id}) async {
     try {
       final data = await _methodChannel.invokeMethod(
         'getOneRecordFile',
-        {'id': id, 'fileFieldName': fileFieldName},
+        {'id': id},
       );
       return data;
     } catch (err) {
