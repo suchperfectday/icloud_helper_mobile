@@ -179,6 +179,21 @@ class CloudHelper {
     }
   }
 
+  Future<void> deleteManyRecords({
+    required String ids,
+  }) async {
+    try {
+      await _methodChannel.invokeMethod(
+        'deleteManyRecords',
+        {
+          'ids': ids,
+        },
+      );
+    } catch (err) {
+      throw _mapException(err as PlatformException);
+    }
+  }
+
   CloudError _mapException(PlatformException err) {
     if (err.message?.contains('CloudKit access was denied by user settings') ??
         false) {

@@ -39,6 +39,10 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
             editRecord(call, result)
         case "deleteRecord":
             deleteRecord(call, result)
+
+        case "deleteManyRecords":
+            deleteManyRecords(call, result)
+
         case "getAllRecords":
             getAllRecords(call, result)
         default:
@@ -353,6 +357,49 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
         Task {
             do {
                 try await database!.deleteRecord(withID: recordID)
+                result(nil)
+            } catch {
+                result(FlutterError.init(code: "DELETE_ERROR", message: "Failed to delete data", details: nil))
+            }
+        }
+    }
+
+    private func deleteManyRecords(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
+        guard let args = call.arguments as? Dictionary<String, Any>,
+              let ids = args["ids"] as? String
+        else {
+            result(FlutterError.init(code: "ARGUMENT_ERROR", message: "deleteRecord Required arguments are not provided", details: nil))
+            return
+        }
+        guard database != nil else {
+            result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
+            return
+        }
+    
+        let stringRecordIDs: [String] = ids.split(separator: ",").map{String($0)};
+        let recordIDsToDelete: [CKRecord.ID] = []
+
+        for stringID in stringRecordIDs {
+            let recordID = CKRecord.ID(recordName: stringID)
+            recordIDsToDelete.append(recordID)
+        }
+
+        let operation = CKModifyRecordsOperation(recordsToSave: nil, recordIDsToDelete: recordIDsToDelete)
+            operation.modifyRecordsCompletionBlock = { (savedRecords, deletedRecordIDs, error) in
+                if let error = error {
+                    print("Error deleting records: \(error)")
+                } else {
+                    print("Records deleted successfully: \(deletedRecordIDs)")
+                }
+        }
+                
+        operation.qualityOfService = .userInitiated
+
+        Task {
+            do {
+                // try await database!.deleteRecord(withID: recordID)
+                try await database!.add(operation)
+
                 result(nil)
             } catch {
                 result(FlutterError.init(code: "DELETE_ERROR", message: "Failed to delete data", details: nil))
