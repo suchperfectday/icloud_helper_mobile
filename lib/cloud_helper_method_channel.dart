@@ -95,6 +95,18 @@ class CloudHelper {
     }
   }
 
+  Future<dynamic> checkOneRecordAvailable({required String id}) async {
+    try {
+      final data = await _methodChannel.invokeMethod(
+        'checkOneRecordAvailable',
+        {'id': id},
+      );
+      return data;
+    } catch (err) {
+      throw _mapException(err as PlatformException);
+    }
+  }
+
   Future<dynamic> editRecord({
     required String id,
     required dynamic data,
