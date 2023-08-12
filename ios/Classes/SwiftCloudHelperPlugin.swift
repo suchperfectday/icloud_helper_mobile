@@ -377,7 +377,7 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
         }
     
         let stringRecordIDs: [String] = ids.split(separator: ",").map{String($0)};
-        let recordIDsToDelete: [CKRecord.ID] = []
+        var recordIDsToDelete: [CKRecord.ID] = []
 
         for stringID in stringRecordIDs {
             let recordID = CKRecord.ID(recordName: stringID)
