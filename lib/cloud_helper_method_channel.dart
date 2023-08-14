@@ -143,7 +143,7 @@ class CloudHelper {
     }
   }
 
-  Future<dynamic> getAllRecordFile(
+  Future<dynamic> getAllRecordsV2(
       {required String type,
       String? query = "",
       List<String>? fields = const []}) async {
