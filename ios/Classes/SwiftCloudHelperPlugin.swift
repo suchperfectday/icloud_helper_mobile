@@ -282,7 +282,7 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
         }
     }
 
-    rivate func getAllRecords(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
+    private func getAllRecords(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         do {
             guard database != nil else {
                 result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
