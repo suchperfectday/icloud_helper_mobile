@@ -143,6 +143,21 @@ class CloudHelper {
     }
   }
 
+  Future<dynamic> getAllRecordFile(
+      {required String type,
+      String? query = "",
+      List<String>? fields = const []}) async {
+    try {
+      final data = await _methodChannel.invokeMethod(
+        'getAllRecords',
+        {'type': type, "query": query, "fields": fields},
+      );
+      return data;
+    } catch (err) {
+      throw _mapException(err as PlatformException);
+    }
+  }
+
   Future<List<dynamic>?> searchRecords({
     required String type,
   }) async {

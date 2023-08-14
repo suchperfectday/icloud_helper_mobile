@@ -282,30 +282,36 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
         }
     }
 
-    private func getAllRecords(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
-        guard database != nil else {
-            result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
+    rivate func getAllRecords(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
+        do {
+            guard database != nil else {
+                result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
+                return
+            }
+            guard let args = call.arguments as? Dictionary<String, Any>,
+                let type = args["type"] as? String,
+                let queryString = args["query"] as? String,
+                let fields = args["fields"] as? Any
+            else {
+                result(FlutterError.init(code: "ARGUMENT_ERROR", message: "getAllRecords Required arguments are not provided", details: nil))
+                return
+            }
+            var predicateQuery = NSPredicate(value: true)
+            if !queryString.isEmpty {
+                predicateQuery = NSPredicate(format: queryString)
+            }
+            let query = CKQuery(recordType: type, predicate: predicateQuery)
+            self._keepLoadRecords(query: query,cursor: nil,result: result, data: [], fields: fields)
+        } catch {
+            print("err")
             return
+            // result(FlutterError.init(code: "UPLOAD_ERROR", message: error.localizedDescription, details: nil))
+            // return
         }
-        guard let args = call.arguments as? Dictionary<String, Any>,
-              let type = args["type"] as? String,
-              let queryString = args["query"] as? String
-        else {
-            result(FlutterError.init(code: "ARGUMENT_ERROR", message: "getAllRecords Required arguments are not provided", details: nil))
-            return
-        }
-        
-        var predicateQuery = NSPredicate(value: true)
-        if !queryString.isEmpty {
-            predicateQuery = NSPredicate(format: queryString)
-        }
-        let query = CKQuery(recordType: type, predicate: predicateQuery)
-        self._keepLoadRecords(query: query,cursor: nil,result: result, data: [])
-
     }
 
-    private func _keepLoadRecords(query: CKQuery? = nil, cursor: CKQueryOperation.Cursor? = nil,result: @escaping FlutterResult, data: [String]) {
-        var mergedData: [String] = data
+    private func _keepLoadRecords(query: CKQuery? = nil, cursor: CKQueryOperation.Cursor? = nil,result: @escaping FlutterResult, data: [Any], fields: [String]) {
+        var mergedData: [Any] = data
         var operation: CKQueryOperation
         if query != nil {
             operation = CKQueryOperation(query: query!)
@@ -316,8 +322,16 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
         operation.resultsLimit = 400;
         operation.recordFetchedBlock = { record in
             do {
-                let re: String = try self.parseRecord(record)
-                mergedData.append(re)
+                if let fileName = record.recordID.recordName as? String {
+                    var dictionary: [String: String] = ["id": fileName]
+
+                    fields.map { field in
+                        if let value = record[field] as? String {
+                            dictionary[field] = value                            
+                        }
+                    }
+                    mergedData.append(dictionary)
+                }
             } catch {
                 // result(FlutterError.init(code: "UPLOAD_ERROR", message: error.localizedDescription, details: nil))
                 // return
@@ -327,7 +341,7 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
             DispatchQueue.main.async {
                 if error == nil {
                     if cursor != nil {
-                        self._keepLoadRecords(query: nil, cursor: cursor,result: result,data: mergedData)
+                        self._keepLoadRecords(query: nil, cursor: cursor,result: result,data: mergedData, fields: fields)
                     }else {
                         result(mergedData)
                     }
