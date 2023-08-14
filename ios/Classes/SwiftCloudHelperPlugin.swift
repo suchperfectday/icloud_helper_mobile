@@ -291,7 +291,7 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
             guard let args = call.arguments as? Dictionary<String, Any>,
                 let type = args["type"] as? String,
                 let queryString = args["query"] as? String,
-                let fields = args["fields"] as? Any
+                let fields = args["fields"] as? [String]
             else {
                 result(FlutterError.init(code: "ARGUMENT_ERROR", message: "getAllRecords Required arguments are not provided", details: nil))
                 return
