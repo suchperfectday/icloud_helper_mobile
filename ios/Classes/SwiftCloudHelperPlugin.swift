@@ -127,7 +127,7 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
         let asset = CKAsset(fileURL: fileURL)
 
         newRecord[fieldName] = asset;
-        newRecord["metadata"] = metadata;
+        newRecord.setValue(metadata, forKey:"metadata");
 
         Task {
             do {
