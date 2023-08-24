@@ -326,6 +326,12 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
             do {
                 if let fileName = record.recordID.recordName as? String {
                     var dictionary: [String: String] = ["id": fileName]
+                    if let creationDate = record.creationDate {
+                        let dateFormatter = DateFormatter()
+                        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                        let dateString = dateFormatter.string(from: creationDate)
+                        dictionary["creationDate"] = dateString
+                    }
 
                     fields.map { field in
                         if let value = record[field] as? String {
