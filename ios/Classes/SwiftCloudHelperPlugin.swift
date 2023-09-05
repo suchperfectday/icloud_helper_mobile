@@ -42,9 +42,10 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
 
         case "deleteManyRecords":
             deleteManyRecords(call, result)
-
         case "getAllRecords":
             getAllRecords(call, result)
+        case "getRecordFileInfo":
+            getRecordFileInfo(call, result)
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -303,6 +304,34 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
                 predicateQuery = NSPredicate(format: queryString)
             }
             let query = CKQuery(recordType: type, predicate: predicateQuery)
+            self._keepLoadRecords(query: query,cursor: nil,result: result, data: [], fields: fields)
+        } catch {
+            print("err")
+            return
+            // result(FlutterError.init(code: "UPLOAD_ERROR", message: error.localizedDescription, details: nil))
+            // return
+        }
+    }
+
+    private func getRecordFileInfo(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
+        do {
+            guard database != nil else {
+                result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
+                return
+            }
+            guard let args = call.arguments as? Dictionary<String, Any>,
+                let queryString = args["query"] as? String,
+                let fields = args["fields"] as? [String],
+                let id = args["id"] as? String
+            else {
+                result(FlutterError.init(code: "ARGUMENT_ERROR", message: "getAllRecords Required arguments are not provided", details: nil))
+                return
+            }
+            var predicateQuery = NSPredicate(value: true)
+            if !queryString.isEmpty {
+                predicateQuery = NSPredicate(format: queryString)
+            }
+            let query = CKQuery(recordName: id, predicate: predicateQuery)
             self._keepLoadRecords(query: query,cursor: nil,result: result, data: [], fields: fields)
         } catch {
             print("err")
