@@ -315,29 +315,42 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
 
     private func getRecordFileInfo(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         do {
-            guard database != nil else {
-                result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
-                return
-            }
             guard let args = call.arguments as? Dictionary<String, Any>,
-                let queryString = args["query"] as? String,
-                let fields = args["fields"] as? [String],
-                let id = args["id"] as? String
+                let id = args["id"] as? String,
+                let fields = args["fields"] as? [String]
             else {
-                result(FlutterError.init(code: "ARGUMENT_ERROR", message: "getAllRecords Required arguments are not provided", details: nil))
+                result(FlutterError.init(code: "ARGUMENT_ERROR", message: "getOneRecord Required arguments are not provided", details: nil))
                 return
             }
-            var predicateQuery = NSPredicate(value: true)
-            if !queryString.isEmpty {
-                predicateQuery = NSPredicate(format: queryString)
+            
+            let recordID = CKRecord.ID(recordName: id)
+            database!.fetch(withRecordID: recordID) { record, error in
+                if let fetchedRecord = record, error == nil {
+                    if let fileName = fetchedRecord.recordID.recordName as? String {
+                        var dictionary: [String: String] = ["id": fileName]
+                        if let creationDate = fetchedRecord.creationDate {
+                            let dateFormatter = DateFormatter()
+                            dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                            let dateString = dateFormatter.string(from: creationDate)
+                            dictionary["creationDate"] = dateString
+                        }
+
+                        fields.map { field in
+                            if let value = fetchedRecord[field] as? String {
+                                dictionary[field] = value                            
+                            }
+                        }
+                        result(dictionary)
+                    }
+                } else if let error = error {
+                    result(FlutterError.init(code: "FETCH_ERROR", message: error.localizedDescription, details: nil))
+                } else {
+                    result(FlutterError.init(code: "FETCH_ERROR", message: "Record not found", details: nil))
+                }
             }
-            let query = CKQuery(recordName: id, predicate: predicateQuery)
-            self._keepLoadRecords(query: query,cursor: nil,result: result, data: [], fields: fields)
         } catch {
             print("err")
             return
-            // result(FlutterError.init(code: "UPLOAD_ERROR", message: error.localizedDescription, details: nil))
-            // return
         }
     }
 
