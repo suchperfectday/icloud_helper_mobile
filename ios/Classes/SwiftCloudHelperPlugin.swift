@@ -232,9 +232,13 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
             if let fetchedRecord = record, error == nil {
                 result(id)
             } else if let error = error {
-                result(FlutterError.init(code: "FETCH_ERROR", message: error.localizedDescription, details: nil))
+                if error.localizedDescription.contains("Record not found") {
+                    result(nil)
+                } else {
+                    result(FlutterError.init(code: "FETCH_ERROR", message: error.localizedDescription, details: nil))
+                }
             } else {
-                result(FlutterError.init(code: "FETCH_ERROR", message: "Record not found", details: nil))
+                result(nil)
             }
         }
     }
