@@ -116,6 +116,7 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
               let fileUrl = args["fileUrl"] as? String,
               let fieldName = args["fieldName"] as? String,
               let metadata = args["metadata"] as? String,
+              let bkType = args["bkType"] as? String,
               let id = args["id"] as? String
         else {
             result(FlutterError.init(code: "ARGUMENT_ERROR", message: "addRecord Required arguments are not provided", details: nil))
@@ -129,7 +130,7 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
 
         newRecord[fieldName] = asset;
         newRecord.setValue(metadata, forKey:"metadata");
-
+        newRecord.setValue(bkType, forKey:"bk_type") 
         Task {
             do {
                 let addedRecord = try await database!.save(newRecord)

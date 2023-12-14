@@ -53,6 +53,7 @@ class CloudHelper {
     required String fileUrl,
     required String fieldName,
     String metadata = '',
+    String bkType = '',
   }) async {
     try {
       final addedData = await _methodChannel.invokeMethod(
@@ -63,6 +64,7 @@ class CloudHelper {
           'fileUrl': fileUrl,
           'fieldName': fieldName,
           'metadata': metadata,
+          'bkType': bkType
         },
       );
       return addedData;
