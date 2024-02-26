@@ -233,6 +233,10 @@ class CloudHelper {
         false) {
       return const PermissionError();
     }
+    if (err.message?.contains('Quota exceeded') ?? false) {
+      return const QuotaExceededError();
+    }
+
     switch (err.code) {
       case "ARGUMENT_ERROR":
         return const ArgumentsError();

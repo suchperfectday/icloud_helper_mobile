@@ -1,6 +1,6 @@
 name: cloud_helper
 description: A Flutter project for working with iCloud.
-version: 1.0.0
+version: 1.0.1
 homepage: https://github.com/Progressive-Mobile/icloud_helper
 
 environment:
