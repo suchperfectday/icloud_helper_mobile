@@ -53,6 +53,7 @@ class CloudHelper {
     required String fileUrl,
     required String fieldName,
     String metadata = '',
+    String bkType = '',
   }) async {
     try {
       final addedData = await _methodChannel.invokeMethod(
@@ -63,6 +64,7 @@ class CloudHelper {
           'fileUrl': fileUrl,
           'fieldName': fieldName,
           'metadata': metadata,
+          'bkType': bkType
         },
       );
       return addedData;
@@ -231,6 +233,10 @@ class CloudHelper {
         false) {
       return const PermissionError();
     }
+    if (err.message?.contains('Quota exceeded') ?? false) {
+      return const QuotaExceededError();
+    }
+
     switch (err.code) {
       case "ARGUMENT_ERROR":
         return const ArgumentsError();
