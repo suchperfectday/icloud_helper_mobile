@@ -72,6 +72,31 @@ class CloudHelper {
       throw _mapException(err as PlatformException);
     }
   }
+  Future<dynamic> editFileRecord({
+    required String id,
+    required String type,
+    required String fileUrl,
+    required String fieldName,
+    String metadata = '',
+    String bkType = '',
+  }) async {
+    try {
+      final addedData = await _methodChannel.invokeMethod(
+        'editFileRecord',
+        {
+          'id': id,
+          'type': type,
+          'fileUrl': fileUrl,
+          'fieldName': fieldName,
+          'metadata': metadata,
+          'bkType': bkType
+        },
+      );
+      return addedData;
+    } catch (err) {
+      throw _mapException(err as PlatformException);
+    }
+  }
 
   Future<dynamic> getOneRecord({required String id}) async {
     try {
