@@ -37,9 +37,10 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
             checkOneRecordAvailable(call, result)
         case "editRecord":
             editRecord(call, result)
+        case "editFileRecord":
+            editFileRecord(call, result)
         case "deleteRecord":
             deleteRecord(call, result)
-
         case "deleteManyRecords":
             deleteManyRecords(call, result)
         case "getAllRecords":
@@ -141,6 +142,54 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
             }
         }
     }
+
+    private func editFileRecord(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
+        guard database != nil else {
+            result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
+            return
+        }
+        guard let args = call.arguments as? Dictionary<String, Any>,
+              let type = args["type"] as? String,
+              let fileUrl = args["fileUrl"] as? String,
+              let fieldName = args["fieldName"] as? String,
+              let metadata = args["metadata"] as? String,
+              let bkType = args["bkType"] as? String,
+              let id = args["id"] as? String
+        else {
+            result(FlutterError.init(code: "ARGUMENT_ERROR", message: "addRecord Required arguments are not provided", details: nil))
+            return
+        }
+
+        let recordID = CKRecord.ID(recordName: id)
+
+        database!.fetch(withRecordID: recordID) { record, error in
+            if let newRecord = record, error == nil {
+
+                let fileURL = URL(fileURLWithPath: fileUrl)
+                let asset = CKAsset(fileURL: fileURL)
+
+                newRecord[fieldName] = asset;
+                newRecord.setValue(metadata, forKey:"metadata");
+                newRecord.setValue(bkType, forKey:"bk_type")
+                
+                // newRecord["data"] = data
+                Task {
+                    do {
+                        let editedRecord = try await self.database!.save(newRecord)
+                        result(fileUrl)
+                    } catch {
+                        result("UPDATE_ERROR cannot update")
+                        return
+                    }
+                }
+            } else if let error = error {
+                result("UPDATE_ERROR no record found With error \(error.localizedDescription)")
+            } else {
+                result("UPDATE_ERROR no record found")
+            }
+        }
+    }
+
 
     private func parseRecord(_ record: CKRecord) throws -> String {
         var dic: [String: Any] = [:]
