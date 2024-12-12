@@ -175,11 +175,13 @@ class CloudHelper {
   Future<dynamic> getAllRecordsV2(
       {required String type,
       String? query = "",
-      List<String>? fields = const []}) async {
+      List<String>? fields = const [],
+      int? limit
+      }) async {
     try {
       final data = await _methodChannel.invokeMethod(
         'getAllRecords',
-        {'type': type, "query": query, "fields": fields},
+        {'type': type, "query": query, "fields": fields, "limit": limit},
       );
       return data;
     } catch (err) {
