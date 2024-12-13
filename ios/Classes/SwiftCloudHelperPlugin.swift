@@ -359,7 +359,9 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
                 predicateQuery = NSPredicate(format: queryString)
             }
             let query = CKQuery(recordType: type, predicate: predicateQuery)
-            self._keepLoadRecords(query: query,cursor: nil,result: result, data: [], fields: fields, limit: limit)
+            var fieldToGet = fields
+            fieldToGet.append("creationDate")
+            self._keepLoadRecords(query: query,cursor: nil,result: result, data: [], fields: fieldToGet, limit: limit)
         } catch {
             print("err")
             return
@@ -419,6 +421,7 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
         }
 
         operation.resultsLimit = limit ?? 400;
+        operation.desiredKeys = fields;
         operation.recordFetchedBlock = { record in
             do {
                 if let fileName = record.recordID.recordName as? String {
