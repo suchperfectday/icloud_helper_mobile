@@ -353,12 +353,15 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
                 result(FlutterError.init(code: "ARGUMENT_ERROR", message: "getAllRecords Required arguments are not provided", details: nil))
                 return
             }
+            let limit = args["limit"] as? Int
             var predicateQuery = NSPredicate(value: true)
             if !queryString.isEmpty {
                 predicateQuery = NSPredicate(format: queryString)
             }
             let query = CKQuery(recordType: type, predicate: predicateQuery)
-            self._keepLoadRecords(query: query,cursor: nil,result: result, data: [], fields: fields)
+            var fieldToGet = fields
+            fieldToGet.append("creationDate")
+            self._keepLoadRecords(query: query,cursor: nil,result: result, data: [], fields: fieldToGet, limit: limit)
         } catch {
             print("err")
             return
@@ -408,7 +411,7 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
         }
     }
 
-    private func _keepLoadRecords(query: CKQuery? = nil, cursor: CKQueryOperation.Cursor? = nil,result: @escaping FlutterResult, data: [Any], fields: [String]) {
+    private func _keepLoadRecords(query: CKQuery? = nil, cursor: CKQueryOperation.Cursor? = nil,result: @escaping FlutterResult, data: [Any], fields: [String], limit: Int? = nil) {
         var mergedData: [Any] = data
         var operation: CKQueryOperation
         if query != nil {
@@ -417,7 +420,8 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
             operation = CKQueryOperation(cursor: cursor!)
         }
 
-        operation.resultsLimit = 400;
+        operation.resultsLimit = limit ?? 400;
+        operation.desiredKeys = fields;
         operation.recordFetchedBlock = { record in
             do {
                 if let fileName = record.recordID.recordName as? String {
@@ -444,9 +448,11 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
         operation.queryCompletionBlock = {(cursor : CKQueryOperation.Cursor?, error : Error?) in
             DispatchQueue.main.async {
                 if error == nil {
-                    if cursor != nil {
+                    if mergedData.count >= limit ?? 0 {
+                        result(mergedData)
+                    } else if cursor != nil {
                         self._keepLoadRecords(query: nil, cursor: cursor,result: result,data: mergedData, fields: fields)
-                    }else {
+                    } else {
                         result(mergedData)
                     }
 
