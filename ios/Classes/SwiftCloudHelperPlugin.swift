@@ -9,11 +9,11 @@ extension Array {
         }
     }
 }
-@available(iOS 13.0, *)
+
 public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
     private var container: CKContainer?
 
-    private var database:  CKDatabase?
+    private var database: CKDatabase?
 
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "cloud_helper", binaryMessenger: registrar.messenger())
@@ -28,7 +28,7 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
         case "addRecord":
             addRecord(call, result)
         case "addRecordFile":
-            addRecordFile(call, result)   
+            addRecordFile(call, result)
         case "getOneRecord":
             getOneRecord(call, result)
         case "getOneRecordFile":
@@ -57,13 +57,13 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
               let containerId = args["containerId"] as? String,
               let databaseType = args["databaseType"] as? String
         else {
-            result(FlutterError.init(code: "ARGUMENT_ERROR", message: "initialize Required arguments are not provided", details: nil))
+            result(FlutterError(code: "ARGUMENT_ERROR", message: "initialize Required arguments are not provided", details: nil))
             return
         }
         container = CKContainer(identifier: containerId)
-        if(databaseType == "B") {
+        if databaseType == "B" {
             database = container!.privateCloudDatabase
-        }else if(databaseType == "A") {
+        } else if databaseType == "A" {
             database = container!.publicCloudDatabase
         }
         result(nil)
@@ -71,7 +71,7 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
 
     private func addRecord(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         guard database != nil else {
-            result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
+            result(FlutterError(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
             return
         }
         guard let args = call.arguments as? Dictionary<String, Any>,
@@ -79,7 +79,7 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
               let dataString = args["data"] as? String,
               let id = args["id"] as? String
         else {
-            result(FlutterError.init(code: "ARGUMENT_ERROR", message: "addRecord Required arguments are not provided", details: nil))
+            result(FlutterError(code: "ARGUMENT_ERROR", message: "addRecord Required arguments are not provided", details: nil))
             return
         }
         let recordId = CKRecord.ID(recordName: id)
@@ -90,7 +90,7 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
                     newRecord.setValuesForKeys(jsonDict)
                 }
             } catch {
-                result(FlutterError.init(code: "ARGUMENT_ERROR", message: "addRecord Required arguments are not provided", details: nil))
+                result(FlutterError(code: "ARGUMENT_ERROR", message: "addRecord Required arguments are not provided", details: nil))
                 return
             }
         }
@@ -101,15 +101,14 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
                 let re = try self.parseRecord(addedRecord)
                 result(re)
             } catch {
-                result(FlutterError.init(code: "UPLOAD_ERROR", message: error.localizedDescription, details: nil))
-                return
+                result(FlutterError(code: "UPLOAD_ERROR", message: error.localizedDescription, details: nil))
             }
         }
     }
 
     private func addRecordFile(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         guard database != nil else {
-            result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
+            result(FlutterError(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
             return
         }
         guard let args = call.arguments as? Dictionary<String, Any>,
@@ -120,7 +119,7 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
               let bkType = args["bkType"] as? String,
               let id = args["id"] as? String
         else {
-            result(FlutterError.init(code: "ARGUMENT_ERROR", message: "addRecord Required arguments are not provided", details: nil))
+            result(FlutterError(code: "ARGUMENT_ERROR", message: "addRecordFile Required arguments are not provided", details: nil))
             return
         }
         let recordId = CKRecord.ID(recordName: id)
@@ -129,23 +128,22 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
         let fileURL = URL(fileURLWithPath: fileUrl)
         let asset = CKAsset(fileURL: fileURL)
 
-        newRecord[fieldName] = asset;
-        newRecord.setValue(metadata, forKey:"metadata");
-        newRecord.setValue(bkType, forKey:"bk_type") 
+        newRecord[fieldName] = asset
+        newRecord.setValue(metadata, forKey: "metadata")
+        newRecord.setValue(bkType, forKey: "bk_type")
         Task {
             do {
-                let addedRecord = try await database!.save(newRecord)
+                _ = try await database!.save(newRecord)
                 result(fileUrl)
             } catch {
-                result(FlutterError.init(code: "UPLOAD_ERROR", message: error.localizedDescription, details: nil))
-                return
+                result(FlutterError(code: "UPLOAD_ERROR", message: error.localizedDescription, details: nil))
             }
         }
     }
 
     private func editFileRecord(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         guard database != nil else {
-            result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
+            result(FlutterError(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
             return
         }
         guard let args = call.arguments as? Dictionary<String, Any>,
@@ -156,36 +154,27 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
               let bkType = args["bkType"] as? String,
               let id = args["id"] as? String
         else {
-            result(FlutterError.init(code: "ARGUMENT_ERROR", message: "addRecord Required arguments are not provided", details: nil))
+            result(FlutterError(code: "ARGUMENT_ERROR", message: "editFileRecord Required arguments are not provided", details: nil))
             return
         }
 
         let recordID = CKRecord.ID(recordName: id)
 
-        database!.fetch(withRecordID: recordID) { record, error in
-            if let newRecord = record, error == nil {
+        Task {
+            do {
+                let newRecord = try await database!.record(for: recordID)
 
                 let fileURL = URL(fileURLWithPath: fileUrl)
                 let asset = CKAsset(fileURL: fileURL)
 
-                newRecord[fieldName] = asset;
-                newRecord.setValue(metadata, forKey:"metadata");
-                newRecord.setValue(bkType, forKey:"bk_type")
-                
-                // newRecord["data"] = data
-                Task {
-                    do {
-                        let editedRecord = try await self.database!.save(newRecord)
-                        result(fileUrl)
-                    } catch {
-                        result("UPDATE_ERROR cannot update")
-                        return
-                    }
-                }
-            } else if let error = error {
-                result("UPDATE_ERROR no record found With error \(error.localizedDescription)")
-            } else {
-                result("UPDATE_ERROR no record found")
+                newRecord[fieldName] = asset
+                newRecord.setValue(metadata, forKey: "metadata")
+                newRecord.setValue(bkType, forKey: "bk_type")
+
+                _ = try await self.database!.save(newRecord)
+                result(fileUrl)
+            } catch {
+                result(FlutterError(code: "UPDATE_ERROR", message: error.localizedDescription, details: nil))
             }
         }
     }
@@ -196,294 +185,251 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
         record.allKeys().forEach { key in
             dic[key] = record[key]
         }
-        do {
-            let jsonData = try JSONSerialization.data(withJSONObject: dic, options: .prettyPrinted)
-            return String(data: jsonData, encoding: .utf8)!
-        } catch {
-           throw error
-        }
+        let jsonData = try JSONSerialization.data(withJSONObject: dic, options: .prettyPrinted)
+        return String(data: jsonData, encoding: .utf8)!
     }
+
     private func getOneRecord(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         guard database != nil else {
-            result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
+            result(FlutterError(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
             return
         }
         guard let args = call.arguments as? Dictionary<String, Any>,
               let id = args["id"] as? String
         else {
-            result(FlutterError.init(code: "ARGUMENT_ERROR", message: "getOneRecord Required arguments are not provided", details: nil))
+            result(FlutterError(code: "ARGUMENT_ERROR", message: "getOneRecord Required arguments are not provided", details: nil))
             return
         }
 
         let recordID = CKRecord.ID(recordName: id)
-        database!.fetch(withRecordID: recordID) { record, error in
-            if let newRecord = record, error == nil {
-                do {
-                    let re = try self.parseRecord(newRecord)
-                    result(re)
-                }catch {
-                    result(FlutterError.init(code: "EDIT_ERROR", message: error.localizedDescription, details: nil))
-                }
-            } else if let error = error {
-                result(FlutterError.init(code: "EDIT_ERROR", message: error.localizedDescription, details: nil))
-            } else {
-                result(FlutterError.init(code: "EDIT_ERROR", message: "Record not found", details: nil))
+        Task {
+            do {
+                let record = try await database!.record(for: recordID)
+                let re = try self.parseRecord(record)
+                result(re)
+            } catch {
+                result(FlutterError(code: "EDIT_ERROR", message: error.localizedDescription, details: nil))
             }
         }
     }
 
     private func getOneRecordFile(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         guard database != nil else {
-            result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
+            result(FlutterError(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
             return
         }
-        
-        guard let args = call.arguments as? Dictionary<String, Any>,
-            let id = args["id"] as? String
 
+        guard let args = call.arguments as? Dictionary<String, Any>,
+              let id = args["id"] as? String
         else {
-            result(FlutterError.init(code: "ARGUMENT_ERROR", message: "getOneRecord Required arguments are not provided", details: nil))
+            result(FlutterError(code: "ARGUMENT_ERROR", message: "getOneRecordFile Required arguments are not provided", details: nil))
             return
         }
-        
+
         let recordID = CKRecord.ID(recordName: id)
-        database!.fetch(withRecordID: recordID) { record, error in
-            if let fetchedRecord = record, error == nil {
+        Task {
+            do {
+                let fetchedRecord = try await database!.record(for: recordID)
                 if let asset = fetchedRecord["sqlite_file"] as? CKAsset,
-                    let assetURL = asset.fileURL {
+                   let assetURL = asset.fileURL {
                     result(assetURL.absoluteString)
                 } else {
-                    result(FlutterError.init(code: "ASSET_ERROR", message: "Asset not found or invalid", details: nil))
+                    result(FlutterError(code: "ASSET_ERROR", message: "Asset not found or invalid", details: nil))
                 }
-            } else if let error = error {
-                result(FlutterError.init(code: "FETCH_ERROR", message: error.localizedDescription, details: nil))
-            } else {
-                result(FlutterError.init(code: "FETCH_ERROR", message: "Record not found", details: nil))
+            } catch {
+                result(FlutterError(code: "FETCH_ERROR", message: error.localizedDescription, details: nil))
             }
         }
     }
 
     private func checkOneRecordAvailable(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         guard database != nil else {
-            result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
+            result(FlutterError(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
             return
         }
-        
-        guard let args = call.arguments as? Dictionary<String, Any>,
-            let id = args["id"] as? String
 
+        guard let args = call.arguments as? Dictionary<String, Any>,
+              let id = args["id"] as? String
         else {
-            result(FlutterError.init(code: "ARGUMENT_ERROR", message: "getOneRecord Required arguments are not provided", details: nil))
+            result(FlutterError(code: "ARGUMENT_ERROR", message: "checkOneRecordAvailable Required arguments are not provided", details: nil))
             return
         }
-        
+
         let recordID = CKRecord.ID(recordName: id)
-        database!.fetch(withRecordID: recordID) { record, error in
-            if let fetchedRecord = record, error == nil {
+        Task {
+            do {
+                _ = try await database!.record(for: recordID)
                 result(id)
-            } else if let error = error {
+            } catch {
                 if error.localizedDescription.contains("Record not found") {
                     result(nil)
                 } else {
-                    result(FlutterError.init(code: "FETCH_ERROR", message: error.localizedDescription, details: nil))
+                    result(FlutterError(code: "FETCH_ERROR", message: error.localizedDescription, details: nil))
                 }
-            } else {
-                result(nil)
             }
         }
     }
 
     private func editRecord(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         guard database != nil else {
-            result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
+            result(FlutterError(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
             return
         }
         guard let args = call.arguments as? Dictionary<String, Any>,
               let dataString = args["data"] as? String,
               let id = args["id"] as? String
         else {
-            result(FlutterError.init(code: "ARGUMENT_ERROR", message: "editRecord Required arguments are not provided", details: nil))
+            result(FlutterError(code: "ARGUMENT_ERROR", message: "editRecord Required arguments are not provided", details: nil))
             return
         }
 
         let recordID = CKRecord.ID(recordName: id)
 
-        database!.fetch(withRecordID: recordID) { record, error in
-            if let newRecord = record, error == nil {
+        Task {
+            do {
+                let newRecord = try await database!.record(for: recordID)
                 if let jsonData = dataString.data(using: .utf8) {
-                    do {
-                        if let jsonDict = try JSONSerialization.jsonObject(with: jsonData, options: []) as? [String: Any] {
-                            newRecord.setValuesForKeys(jsonDict)
-                        }
-                    } catch {
-                        result(FlutterError.init(code: "ARGUMENT_ERROR", message: "addRecord Required arguments are not provided", details: nil))
-                        return
+                    if let jsonDict = try JSONSerialization.jsonObject(with: jsonData, options: []) as? [String: Any] {
+                        newRecord.setValuesForKeys(jsonDict)
                     }
                 }
-                // newRecord["data"] = data
-                Task {
-                    do {
-                        let editedRecord = try await self.database!.save(newRecord)
-                        let re = try self.parseRecord(editedRecord)
-                        result(re)
-                    } catch {
-                        result(FlutterError.init(code: "EDIT_ERROR", message: error.localizedDescription, details: nil))
-                        return
-                    }
-                }
-            } else if let error = error {
-                result(FlutterError.init(code: "EDIT_ERROR", message: error.localizedDescription, details: nil))
-            } else {
-                result(FlutterError.init(code: "EDIT_ERROR", message: "Record not found", details: nil))
+                let editedRecord = try await self.database!.save(newRecord)
+                let re = try self.parseRecord(editedRecord)
+                result(re)
+            } catch {
+                result(FlutterError(code: "EDIT_ERROR", message: error.localizedDescription, details: nil))
             }
         }
     }
 
     private func getAllRecords(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
-        do {
-            guard database != nil else {
-                result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
-                return
-            }
-            guard let args = call.arguments as? Dictionary<String, Any>,
-                let type = args["type"] as? String,
-                let queryString = args["query"] as? String,
-                let fields = args["fields"] as? [String]
-            else {
-                result(FlutterError.init(code: "ARGUMENT_ERROR", message: "getAllRecords Required arguments are not provided", details: nil))
-                return
-            }
-            let limit = args["limit"] as? Int
-            var predicateQuery = NSPredicate(value: true)
-            if !queryString.isEmpty {
-                predicateQuery = NSPredicate(format: queryString)
-            }
-            let query = CKQuery(recordType: type, predicate: predicateQuery)
-            var fieldToGet = fields
-            fieldToGet.append("creationDate")
-            self._keepLoadRecords(query: query,cursor: nil,result: result, data: [], fields: fieldToGet, limit: limit)
-        } catch {
-            print("err")
+        guard database != nil else {
+            result(FlutterError(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
             return
-            // result(FlutterError.init(code: "UPLOAD_ERROR", message: error.localizedDescription, details: nil))
-            // return
         }
+        guard let args = call.arguments as? Dictionary<String, Any>,
+              let type = args["type"] as? String,
+              let queryString = args["query"] as? String,
+              let fields = args["fields"] as? [String]
+        else {
+            result(FlutterError(code: "ARGUMENT_ERROR", message: "getAllRecords Required arguments are not provided", details: nil))
+            return
+        }
+        let limit = args["limit"] as? Int
+        var predicateQuery = NSPredicate(value: true)
+        if !queryString.isEmpty {
+            predicateQuery = NSPredicate(format: queryString)
+        }
+        let query = CKQuery(recordType: type, predicate: predicateQuery)
+        var fieldToGet = fields
+        fieldToGet.append("creationDate")
+        self._keepLoadRecords(query: query, cursor: nil, result: result, data: [], fields: fieldToGet, limit: limit)
     }
 
     private func getRecordFileInfo(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
-        do {
-            guard let args = call.arguments as? Dictionary<String, Any>,
-                let id = args["id"] as? String,
-                let fields = args["fields"] as? [String]
-            else {
-                result(FlutterError.init(code: "ARGUMENT_ERROR", message: "getOneRecord Required arguments are not provided", details: nil))
-                return
-            }
-            
-            let recordID = CKRecord.ID(recordName: id)
-            database!.fetch(withRecordID: recordID) { record, error in
-                if let fetchedRecord = record, error == nil {
-                    if let fileName = fetchedRecord.recordID.recordName as? String {
-                        var dictionary: [String: String] = ["id": fileName]
-                        if let creationDate = fetchedRecord.creationDate {
-                            let dateFormatter = DateFormatter()
-                            dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-                            let dateString = dateFormatter.string(from: creationDate)
-                            dictionary["creationDate"] = dateString
-                        }
-
-                        fields.map { field in
-                            if let value = fetchedRecord[field] as? String {
-                                dictionary[field] = value                            
-                            }
-                        }
-                        result(dictionary)
-                    }
-                } else if let error = error {
-                    result(FlutterError.init(code: "FETCH_ERROR", message: error.localizedDescription, details: nil))
-                } else {
-                    result(FlutterError.init(code: "FETCH_ERROR", message: "Record not found", details: nil))
-                }
-            }
-        } catch {
-            print("err")
+        guard let args = call.arguments as? Dictionary<String, Any>,
+              let id = args["id"] as? String,
+              let fields = args["fields"] as? [String]
+        else {
+            result(FlutterError(code: "ARGUMENT_ERROR", message: "getRecordFileInfo Required arguments are not provided", details: nil))
             return
+        }
+
+        let recordID = CKRecord.ID(recordName: id)
+        Task {
+            do {
+                let fetchedRecord = try await database!.record(for: recordID)
+                let fileName = fetchedRecord.recordID.recordName
+                var dictionary: [String: String] = ["id": fileName]
+                if let creationDate = fetchedRecord.creationDate {
+                    let dateFormatter = DateFormatter()
+                    dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                    let dateString = dateFormatter.string(from: creationDate)
+                    dictionary["creationDate"] = dateString
+                }
+                for field in fields {
+                    if let value = fetchedRecord[field] as? String {
+                        dictionary[field] = value
+                    }
+                }
+                result(dictionary)
+            } catch {
+                result(FlutterError(code: "FETCH_ERROR", message: error.localizedDescription, details: nil))
+            }
         }
     }
 
-    private func _keepLoadRecords(query: CKQuery? = nil, cursor: CKQueryOperation.Cursor? = nil,result: @escaping FlutterResult, data: [Any], fields: [String], limit: Int? = nil) {
+    private func _keepLoadRecords(query: CKQuery? = nil, cursor: CKQueryOperation.Cursor? = nil, result: @escaping FlutterResult, data: [Any], fields: [String], limit: Int? = nil) {
         var mergedData: [Any] = data
         var operation: CKQueryOperation
-        if query != nil {
-            operation = CKQueryOperation(query: query!)
-        }else {
+        if let query = query {
+            operation = CKQueryOperation(query: query)
+        } else {
             operation = CKQueryOperation(cursor: cursor!)
         }
 
-        operation.resultsLimit = limit ?? 400;
-        operation.desiredKeys = fields;
-        operation.recordFetchedBlock = { record in
-            do {
-                if let fileName = record.recordID.recordName as? String {
-                    var dictionary: [String: String] = ["id": fileName]
-                    if let creationDate = record.creationDate {
-                        let dateFormatter = DateFormatter()
-                        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-                        let dateString = dateFormatter.string(from: creationDate)
-                        dictionary["creationDate"] = dateString
-                    }
-
-                    fields.map { field in
-                        if let value = record[field] as? String {
-                            dictionary[field] = value                            
-                        }
-                    }
-                    mergedData.append(dictionary)
+        operation.resultsLimit = limit ?? 400
+        operation.desiredKeys = fields
+        operation.recordMatchedBlock = { _, recordResult in
+            switch recordResult {
+            case .success(let record):
+                let fileName = record.recordID.recordName
+                var dictionary: [String: String] = ["id": fileName]
+                if let creationDate = record.creationDate {
+                    let dateFormatter = DateFormatter()
+                    dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                    let dateString = dateFormatter.string(from: creationDate)
+                    dictionary["creationDate"] = dateString
                 }
-            } catch {
-                // result(FlutterError.init(code: "UPLOAD_ERROR", message: error.localizedDescription, details: nil))
-                // return
+                for field in fields {
+                    if let value = record[field] as? String {
+                        dictionary[field] = value
+                    }
+                }
+                mergedData.append(dictionary)
+            case .failure:
+                break
             }
         }
-        operation.queryCompletionBlock = {(cursor : CKQueryOperation.Cursor?, error : Error?) in
+        operation.queryResultBlock = { operationResult in
             DispatchQueue.main.async {
-                if error == nil {
+                switch operationResult {
+                case .success(let cursor):
                     if mergedData.count >= limit ?? 0 {
                         result(mergedData)
-                    } else if cursor != nil {
-                        self._keepLoadRecords(query: nil, cursor: cursor,result: result,data: mergedData, fields: fields)
+                    } else if let cursor = cursor {
+                        self._keepLoadRecords(query: nil, cursor: cursor, result: result, data: mergedData, fields: fields, limit: limit)
                     } else {
                         result(mergedData)
                     }
-
-                } else {
-                    result(FlutterError.init(code: "GET_DATA_ERROR", message: error?.localizedDescription, details: nil))
+                case .failure(let error):
+                    result(FlutterError(code: "GET_DATA_ERROR", message: error.localizedDescription, details: nil))
                 }
             }
         }
         database?.add(operation)
-
     }
+
     private func deleteRecord(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         guard let args = call.arguments as? Dictionary<String, Any>,
               let id = args["id"] as? String
         else {
-            result(FlutterError.init(code: "ARGUMENT_ERROR", message: "deleteRecord Required arguments are not provided", details: nil))
+            result(FlutterError(code: "ARGUMENT_ERROR", message: "deleteRecord Required arguments are not provided", details: nil))
             return
         }
         guard database != nil else {
-            result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
+            result(FlutterError(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
             return
         }
-        
+
         let recordID = CKRecord.ID(recordName: id)
-        
+
         Task {
             do {
                 try await database!.deleteRecord(withID: recordID)
                 result(nil)
             } catch {
-                result(FlutterError.init(code: "DELETE_ERROR", message: "Failed to delete data", details: nil))
+                result(FlutterError(code: "DELETE_ERROR", message: "Failed to delete data", details: nil))
             }
         }
     }
@@ -492,15 +438,15 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
         guard let args = call.arguments as? Dictionary<String, Any>,
               let ids = args["ids"] as? String
         else {
-            result(FlutterError.init(code: "ARGUMENT_ERROR", message: "deleteRecord Required arguments are not provided", details: nil))
+            result(FlutterError(code: "ARGUMENT_ERROR", message: "deleteRecord Required arguments are not provided", details: nil))
             return
         }
         guard database != nil else {
-            result(FlutterError.init(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
+            result(FlutterError(code: "INITIALIZATION_ERROR", message: "Storage not initialized", details: nil))
             return
         }
-    
-        let stringRecordIDs: [String] = ids.split(separator: ",").map{String($0)};
+
+        let stringRecordIDs: [String] = ids.split(separator: ",").map { String($0) }
         var recordIDsToDelete: [CKRecord.ID] = []
 
         for stringID in stringRecordIDs {
@@ -509,25 +455,17 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
         }
 
         let operation = CKModifyRecordsOperation(recordsToSave: nil, recordIDsToDelete: recordIDsToDelete)
-            operation.modifyRecordsCompletionBlock = { (savedRecords, deletedRecordIDs, error) in
-                if let error = error {
-                    print("Error deleting records: \(error)")
-                } else {
-                    print("Records deleted successfully: \(deletedRecordIDs)")
-                }
-        }
-                
-        operation.qualityOfService = .userInitiated
-
-        Task {
-            do {
-                // try await database!.deleteRecord(withID: recordID)
-                try await database!.add(operation)
-
-                result(nil)
-            } catch {
-                result(FlutterError.init(code: "DELETE_ERROR", message: "Failed to delete data", details: nil))
+        operation.modifyRecordsResultBlock = { operationResult in
+            switch operationResult {
+            case .success:
+                print("Records deleted successfully")
+            case .failure(let error):
+                print("Error deleting records: \(error)")
             }
         }
+
+        operation.qualityOfService = .userInitiated
+        database?.add(operation)
+        result(nil)
     }
 }

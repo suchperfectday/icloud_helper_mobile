@@ -6,7 +6,7 @@ void main() {
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -41,7 +41,7 @@ class _MyAppState extends State<MyApp> {
             ),
             ElevatedButton(
               onPressed: () async {
-                cloudHelper ??= await CloudHelper.create(_containerId);
+                cloudHelper ??= await CloudHelper.create(_containerId, "B");
                 try {
                   await cloudHelper?.addRecord(
                     data: {
@@ -89,7 +89,7 @@ class _MyAppState extends State<MyApp> {
             ),
             ElevatedButton(
               onPressed: () async {
-                cloudHelper ??= await CloudHelper.create(_containerId);
+                cloudHelper ??= await CloudHelper.create(_containerId, "B");
                 try {
                   await cloudHelper?.editRecord(
                     id: _idController.text,
