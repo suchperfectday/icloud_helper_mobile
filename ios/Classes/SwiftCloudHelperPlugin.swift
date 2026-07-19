@@ -225,12 +225,13 @@ public class SwiftCloudHelperPlugin: NSObject, FlutterPlugin {
             result(FlutterError(code: "ARGUMENT_ERROR", message: "getOneRecordFile Required arguments are not provided", details: nil))
             return
         }
+        let fieldName = args["fieldName"] as? String ?? "sqlite_file"
 
         let recordID = CKRecord.ID(recordName: id)
         Task {
             do {
                 let fetchedRecord = try await database!.record(for: recordID)
-                if let asset = fetchedRecord["sqlite_file"] as? CKAsset,
+                if let asset = fetchedRecord[fieldName] as? CKAsset,
                    let assetURL = asset.fileURL {
                     result(assetURL.absoluteString)
                 } else {

@@ -112,11 +112,14 @@ class CloudHelper {
     }
   }
 
-  Future<dynamic> getOneRecordFile({required String id}) async {
+  Future<dynamic> getOneRecordFile({
+    required String id,
+    String fieldName = 'sqlite_file',
+  }) async {
     try {
       final data = await _methodChannel.invokeMethod(
         'getOneRecordFile',
-        {'id': id},
+        {'id': id, 'fieldName': fieldName},
       );
       return data;
     } catch (err) {
